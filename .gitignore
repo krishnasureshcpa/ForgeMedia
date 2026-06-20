@@ -1,0 +1,27 @@
+# Swift Package Manager
+.build/
+Packages/
+*.xcodeproj
+xcuserdata/
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# ForgeMedia local data
+ForgeMedia.sqlite*
+
+# Session and memory files (local only)
+session-ForgeMedia/
+memory/
+build-history/
+graphify-out/
+echo
+
+# Large binaries — exclude app bundle and DMG (too large for git)
+ForgeMedia.app/
+ForgeMedia.dmg
+VideoSmith/
+
+# Spec-kit artifacts (local planning docs)
+.specify/

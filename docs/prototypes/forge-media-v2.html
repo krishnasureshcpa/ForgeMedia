@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForgeMedia — Privacy-First Media Command Center</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   FORGEMEDIA v2 — macOS 27 Design System
+   Principal Design Engineer • Apple Human Interface
+
+   TOKEN ARCHITECTURE
+   Every visual value flows from :root. No hardcoded colors, radii, or
+   durations exist outside this token block. Change one value → entire
+   interface re-themes without touching a single component rule.
+   ════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Surface Ladder (Light) ─────────────────────────────────────────── */
+  --fm-bg:                #f5f5f7;
+  --fm-surface:           #ffffff;
+  --fm-surface-raised:    #fbfbfd;
+  --fm-surface-glass:     rgba(255,255,255,0.72);
+  --fm-surface-glass-alt: rgba(255,255,255,0.56);
+
+  /* ── Text Ladder ────────────────────────────────────────────────────── */
+  --fm-fg:                #1d1d1f;
+  --fm-fg-secondary:      #424245;
+  --fm-muted:             #6e6e73;
+  --fm-placeholder:       #aeaeb2;
+
+  /* ── Borders ────────────────────────────────────────────────────────── */
+  --fm-border-soft:       #e8e8ed;
+  --fm-border:            #d2d2d7;
+  --fm-border-strong:     rgba(0,0,0,0.15);
+  --fm-edge:              0 0 0 0.5px rgba(0,0,0,0.08);
+
+  /* ── Accent ─────────────────────────────────────────────────────────── */
+  --fm-accent:            #0066cc;
+  --fm-accent-strong:     #0077ed;
+  --fm-accent-glow:       rgba(0,102,204,0.12);
+  --fm-success:           #1f8f55;
+  --fm-warning:           #b7791f;
+  --fm-danger:            #c43b3b;
+
+  /* ── Geometry ───────────────────────────────────────────────────────── */
+  --fm-radius-sm:         8px;
+  --fm-radius:            12px;
+  --fm-radius-lg:         18px;
+  --fm-radius-pill:       980px;
+  --fm-radius-window:     10px;
+
+  /* ── Typography ─────────────────────────────────────────────────────── */
+  --fm-font-display:      -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+  --fm-font-body:         -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  --fm-font-mono:         "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  /* ── Motion Tokens ──────────────────────────────────────────────────── */
+  --fm-ease-out:          cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --fm-ease-spring:       cubic-bezier(0.34, 1.56, 0.64, 1);
+  --fm-ease-smooth:       cubic-bezier(0.4, 0, 0.2, 1);
+  --fm-ease-apple-spring: cubic-bezier(0.2, 0.9, 0.3, 1.0);
+  --fm-duration-press:    100ms;
+  --fm-duration-fast:     150ms;
+  --fm-duration-panel:    220ms;
+  --fm-duration-normal:   250ms;
+  --fm-duration-slow:     400ms;
+
+  /* ── Shadows ────────────────────────────────────────────────────────── */
+  --fm-shadow-sm:         0 1px 3px rgba(0,0,0,0.06);
+  --fm-shadow-md:         0 4px 12px rgba(0,0,0,0.08);
+  --fm-shadow-lg:         0 8px 30px rgba(0,0,0,0.12);
+  --fm-shadow-edge:       0 0 0 0.5px rgba(0,0,0,0.06);
+
+  /* ── Window Chrome ──────────────────────────────────────────────────── */
+  --fm-window-bg:         rgba(245,245,247,0.85);
+  --fm-titlebar-height:   52px;
+
+  /* ── Depth / Glass ──────────────────────────────────────────────────── */
+  --fm-blur-sm:           8px;
+  --fm-blur-md:           20px;
+  --fm-blur-lg:           40px;
+  --fm-glass-saturate:    180%;
+}
+
+/* ── Dark Mode ─────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fm-bg:                #1c1c1e;
+    --fm-surface:           #2c2c2e;
+    --fm-surface-raised:    #3a3a3c;
+    --fm-surface-glass:     rgba(44,44,46,0.72);
+    --fm-surface-glass-alt: rgba(44,44,46,0.56);
+
+    --fm-fg:                #f5f5f7;
+    --fm-fg-secondary:      #98989d;
+    --fm-muted:             #636366;
+    --fm-placeholder:       #48484a;
+
+    --fm-border-soft:       #3a3a3c;
+    --fm-border:            #48484a;
+    --fm-border-strong:     rgba(255,255,255,0.15);
+    --fm-edge:              0 0 0 0.5px rgba(255,255,255,0.08);
+
+    --fm-accent:            #0a84ff;
+    --fm-accent-strong:     #409cff;
+    --fm-accent-glow:       rgba(10,132,255,0.16);
+
+    --fm-window-bg:         rgba(28,28,30,0.85);
+
+    --fm-shadow-sm:         0 1px 3px rgba(0,0,0,0.2);
+    --fm-shadow-md:         0 4px 12px rgba(0,0,0,0.3);
+    --fm-shadow-lg:         0 8px 30px rgba(0,0,0,0.4);
+    --fm-shadow-edge:       0 0 0 0.5px rgba(255,255,255,0.06);
+  }
+}
+
+/* ── Reduced Motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --fm-duration-press:   0ms;
+    --fm-duration-fast:    0ms;
+    --fm-duration-panel:   0ms;
+    --fm-duration-normal:  0ms;
+    --fm-duration-slow:    0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESET & BASE
+   ════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--fm-font-body);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.47;
+  color: var(--fm-fg);
+  background: #000;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STAGE — Desktop Simulation Canvas
+   ════════════════════════════════════════════════════════════════════════ */
+
+.stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(120,120,128,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(0,102,204,0.06) 0%, transparent 50%),
+    #000;
+  padding: 40px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   macOS 27 WINDOW — Outer Container
+
+   Multi-layered glass morphism:
+   Layer 1: Base fill with backdrop blur
+   Layer 2: Subtle inner highlight (top edge)
+   Layer 3: Edge definition via box-shadow (no visible border stroke)
+   Layer 4: Squircle corner via continuous radius + clip
+   ════════════════════════════════════════════════════════════════════════ */
+
+.window {
+  width: 920px;
+  height: 640px;
+  background: var(--fm-window-bg);
+  backdrop-filter: blur(var(--fm-blur-lg)) saturate(var(--fm-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--fm-blur-lg)) saturate(var(--fm-glass-saturate));
+  border-radius: var(--fm-radius-window);
+  box-shadow:
+    var(--fm-shadow-edge),
+    0 0 0 1px rgba(0,0,0,0.12),
+    0 25px 60px rgba(0,0,0,0.35),
+    0 8px 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow var(--fm-duration-slow) var(--fm-ease-out);
+}
+
+.window::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--fm-radius-window);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.02) 30%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ── Title Bar ─────────────────────────────────────────────────────────── */
+.titlebar {
+  height: var(--fm-titlebar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+  position: relative;
+  z-index: 10;
+}
+
+.titlebar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--fm-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fm-fg);
+  letter-spacing: -0.01em;
+  opacity: 0.85;
+}
+
+/* ── Traffic Lights ───────────────────────────────────────────────────── */
+.traffic-lights {
+  display: flex;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+  z-index: 11;
+}
+
+.traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition:
+    background var(--fm-duration-fast) var(--fm-ease-out),
+    box-shadow var(--fm-duration-fast) var(--fm-ease-out);
+}
+
+.traffic-light::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity var(--fm-duration-press) var(--fm-ease-out);
+}
+
+.traffic-light.close {
+  background: #ed6a5e;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.08);
+}
+.traffic-light.close:hover { background: #c94b3f; }
+.traffic-light.close:hover::after {
+  opacity: 1;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%);
+}
+
+.traffic-light.minimize {
+  background: #f5bd4f;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.06);
+}
+.traffic-light.minimize:hover { background: #d4a235; }
+
+.traffic-light.zoom {
+  background: #61c554;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.06);
+}
+.traffic-light.zoom:hover { background: #4da83f; }
+
+/* ── Toolbar ───────────────────────────────────────────────────────────── */
+.toolbar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  flex-shrink: 0;
+  border-bottom: 0.5px solid var(--fm-border-soft);
+}
+
+.toolbar-title {
+  font-family: var(--fm-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fm-fg);
+  letter-spacing: -0.01em;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+/* ── Privacy Pill ─────────────────────────────────────────────────────── */
+.privacy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--fm-radius-pill);
+  background: rgba(31,143,85,0.08);
+  color: var(--fm-success);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--fm-font-body);
+  letter-spacing: 0.01em;
+  cursor: default;
+  user-select: none;
+}
+
+.privacy-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fm-success);
+  box-shadow: 0 0 0 2px rgba(31,143,85,0.2);
+}
+
+/* ── Preset Selector ──────────────────────────────────────────────────── */
+.preset-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--fm-radius-sm);
+  background: var(--fm-surface-glass);
+  backdrop-filter: blur(var(--fm-blur-sm));
+  -webkit-backdrop-filter: blur(var(--fm-blur-sm));
+  border: 0.5px solid var(--fm-border-soft);
+  box-shadow: var(--fm-edge);
+  font-family: var(--fm-font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fm-fg);
+  cursor: pointer;
+  transition:
+    background var(--fm-duration-fast) var(--fm-ease-out),
+    box-shadow var(--fm-duration-fast) var(--fm-ease-out);
+}
+.preset-select:hover {
+  background: var(--fm-surface-raised);
+  box-shadow: var(--fm-shadow-sm);
+}
+.preset-select select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%236e6e73' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN CONTENT AREA
+   ════════════════════════════════════════════════════════════════════════ */
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+.content::-webkit-scrollbar {
+  width: 6px;
+}
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.content::-webkit-scrollbar-thumb {
+  background: rgba(128,128,128,0.25);
+  border-radius: 3px;
+}
+.content::-webkit-scrollbar-thumb:hover {
+  background: rgba(128,128,128,0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DROP ZONE — Primary Intake Surface
+
+   Kale Jain spatial principle: maximum negative space, single clear action.
+   Tim Gabe storytelling: the zone breathes on drag-over — it's alive.
+   Emil Kowalski precision: every transition is measured in milliseconds.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.drop-zone {
+  position: relative;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--fm-radius-lg);
+  background: var(--fm-surface);
+  border: 1.5px dashed var(--fm-border);
+  cursor: default;
+  transition:
+    border-color var(--fm-duration-panel) var(--fm-ease-out),
+    border-width var(--fm-duration-panel) var(--fm-ease-out),
+    background var(--fm-duration-panel) var(--fm-ease-out),
+    transform var(--fm-duration-panel) var(--fm-ease-apple-spring),
+    box-shadow var(--fm-duration-panel) var(--fm-ease-out);
+  box-shadow: var(--fm-edge);
+  overflow: hidden;
+}
+
+.drop-zone:hover {
+  border-color: var(--fm-muted);
+  background: var(--fm-surface-raised);
+  box-shadow: var(--fm-shadow-sm);
+}
+
+.drop-zone.drag-over {
+  border-color: var(--fm-accent);
+  border-width: 2.5px;
+  border-style: solid;
+  background: var(--fm-accent-glow);
+  transform: scale(1.008);
+  box-shadow:
+    0 0 0 4px var(--fm-accent-glow),
+    var(--fm-shadow-md);
+}
+
+.drop-zone-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  color: var(--fm-muted);
+  transition:
+    color var(--fm-duration-panel) var(--fm-ease-out),
+    transform var(--fm-duration-panel) var(--fm-ease-spring);
+}
+
+.drop-zone.drag-over .drop-zone-icon {
+  color: var(--fm-accent);
+  transform: scale(1.12);
+}
+
+.drop-zone-label {
+  font-family: var(--fm-font-display);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fm-fg-secondary);
+  transition: color var(--fm-duration-panel) var(--fm-ease-out);
+}
+
+.drop-zone.drag-over .drop-zone-label {
+  color: var(--fm-accent);
+}
+
+.drop-zone-sublabel {
+  font-size: 12px;
+  color: var(--fm-muted);
+  margin-top: 4px;
+  transition: color var(--fm-duration-panel) var(--fm-ease-out);
+}
+
+/* ── Drop Zone Pulse Ring ──────────────────────────────────────────────── */
+.drop-zone-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: calc(var(--fm-radius-lg) + 6px);
+  border: 1.5px solid transparent;
+  pointer-events: none;
+  transition: border-color var(--fm-duration-panel) var(--fm-ease-out);
+}
+.drop-zone.drag-over .drop-zone-pulse {
+  border-color: rgba(0,102,204,0.18);
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%   { border-color: rgba(0,102,204,0.18); }
+  50%  { border-color: rgba(0,102,204,0.06); }
+  100% { border-color: rgba(0,102,204,0.18); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   JOB CARD — State Machine Component
+
+   11 lifecycle states rendered as discrete visual configurations.
+   Each state transition uses spring physics, not linear interpolation.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.job-card {
+  background: var(--fm-surface);
+  border-radius: var(--fm-radius);
+  box-shadow: var(--fm-edge), var(--fm-shadow-sm);
+  transition:
+    box-shadow var(--fm-duration-normal) var(--fm-ease-out),
+    transform var(--fm-duration-normal) var(--fm-ease-apple-spring);
+  overflow: hidden;
+}
+
+.job-card:hover {
+  box-shadow: var(--fm-edge), var(--fm-shadow-md);
+  transform: translateY(-1px);
+}
+
+.job-card-inner {
+  padding: 14px 16px;
+}
+
+/* ── Card Header ───────────────────────────────────────────────────────── */
+.job-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.job-card-title {
+  font-family: var(--fm-font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fm-fg);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+/* ── Phase Badge ──────────────────────────────────────────────────────── */
+.phase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--fm-radius-pill);
+  font-family: var(--fm-font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.phase-badge.idle        { background: var(--fm-border-soft); color: var(--fm-muted); }
+.phase-badge.preparing   { background: rgba(0,102,204,0.08);  color: var(--fm-accent); }
+.phase-badge.running     { background: rgba(0,102,204,0.12);  color: var(--fm-accent-strong); }
+.phase-badge.validating  { background: rgba(183,121,31,0.08); color: var(--fm-warning); }
+.phase-badge.completed   { background: rgba(31,143,85,0.08);  color: var(--fm-success); }
+.phase-badge.warnings    { background: rgba(183,121,31,0.08); color: var(--fm-warning); }
+.phase-badge.failed      { background: rgba(196,59,59,0.08);  color: var(--fm-danger); }
+.phase-badge.canceled    { background: var(--fm-border-soft); color: var(--fm-muted); }
+.phase-badge.paused      { background: rgba(183,121,31,0.08); color: var(--fm-warning); }
+.phase-badge.recovered   { background: rgba(0,102,204,0.08);  color: var(--fm-accent); }
+
+.phase-badge.running::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fm-accent-strong);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--fm-accent-glow); }
+  50%      { opacity: 0.6; box-shadow: 0 0 0 4px transparent; }
+}
+
+.phase-badge.completed::before {
+  content: '✓';
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.phase-badge.failed::before {
+  content: '✕';
+  font-size: 8px;
+  font-weight: 700;
+}
+
+/* ── Progress Track ───────────────────────────────────────────────────── */
+.progress-section {
+  margin: 6px 0;
+}
+
+.progress-track {
+  height: 5px;
+  background: var(--fm-border-soft);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--fm-accent);
+  border-radius: 3px;
+  transition: width var(--fm-duration-slow) var(--fm-ease-smooth);
+  position: relative;
+}
+
+.progress-fill.indeterminate {
+  width: 30% !important;
+  animation: indeterminate-progress 2s ease-in-out infinite;
+}
+
+@keyframes indeterminate-progress {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.progress-fill.completed {
+  background: var(--fm-success);
+}
+
+.progress-fill.warning-fill {
+  background: var(--fm-warning);
+}
+
+.progress-fill.failed-fill {
+  background: var(--fm-danger);
+}
+
+/* ── Progress Label Row ───────────────────────────────────────────────── */
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.progress-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fm-fg-secondary);
+  letter-spacing: -0.01em;
+}
+
+.progress-confidence {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fm-muted);
+  font-family: var(--fm-font-mono);
+}
+
+/* ── Card Actions ─────────────────────────────────────────────────────── */
+.job-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: var(--fm-radius-sm);
+  font-family: var(--fm-font-body);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition:
+    background var(--fm-duration-fast) var(--fm-ease-out),
+    box-shadow var(--fm-duration-fast) var(--fm-ease-out),
+    transform var(--fm-duration-press) var(--fm-ease-spring);
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--fm-accent);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,102,204,0.2);
+}
+.btn-primary:hover {
+  background: var(--fm-accent-strong);
+  box-shadow: 0 2px 6px rgba(0,102,204,0.3);
+}
+
+.btn-secondary {
+  background: var(--fm-surface-glass);
+  color: var(--fm-fg);
+  border: 0.5px solid var(--fm-border);
+  box-shadow: var(--fm-edge);
+}
+.btn-secondary:hover {
+  background: var(--fm-surface-raised);
+  box-shadow: var(--fm-shadow-sm);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--fm-danger);
+}
+.btn-danger:hover {
+  background: rgba(196,59,59,0.08);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--fm-fg-secondary);
+}
+.btn-ghost:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--fm-fg);
+}
+
+/* ── Status Row (completed/failed summary) ─────────────────────────────── */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-radius: var(--fm-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-row.success {
+  background: rgba(31,143,85,0.06);
+  color: var(--fm-success);
+}
+
+.status-row.warning {
+  background: rgba(183,121,31,0.06);
+  color: var(--fm-warning);
+}
+
+.status-row.error {
+  background: rgba(196,59,59,0.06);
+  color: var(--fm-danger);
+}
+
+.status-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EMPTY STATE — Progressive Disclosure
+
+   No decorative illustration. No gradient hero. Just breathing room
+   and one clear primary action. This is the "No" Architecture in practice.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: var(--fm-border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: var(--fm-muted);
+}
+
+.empty-state-heading {
+  font-family: var(--fm-font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--fm-fg);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.empty-state-body {
+  font-size: 14px;
+  color: var(--fm-fg-secondary);
+  max-width: 320px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MENU BAR PANEL — Compact Status
+
+   This simulates the MenuBarExtra panel that appears from the menu bar.
+   Compact, readable, no decoration. Just state.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.menu-bar-panel {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  width: 280px;
+  background: var(--fm-surface-glass);
+  backdrop-filter: blur(var(--fm-blur-lg)) saturate(var(--fm-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--fm-blur-lg)) saturate(var(--fm-glass-saturate));
+  border-radius: var(--fm-radius);
+  box-shadow:
+    var(--fm-edge),
+    0 0 0 1px rgba(0,0,0,0.1),
+    0 16px 40px rgba(0,0,0,0.2);
+  padding: 14px;
+  z-index: 50;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
+  pointer-events: none;
+  transition:
+    opacity var(--fm-duration-panel) var(--fm-ease-out),
+    transform var(--fm-duration-panel) var(--fm-ease-spring);
+}
+
+.menu-bar-panel.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.menu-bar-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.menu-bar-panel-title {
+  font-family: var(--fm-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fm-fg);
+}
+
+.menu-bar-divider {
+  height: 0.5px;
+  background: var(--fm-border-soft);
+  margin: 10px 0;
+}
+
+.menu-bar-job {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.menu-bar-job-gauge {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.menu-bar-job-gauge circle {
+  fill: none;
+  stroke: var(--fm-border-soft);
+  stroke-width: 2;
+}
+
+.menu-bar-job-gauge .gauge-fill {
+  fill: none;
+  stroke: var(--fm-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--fm-duration-slow) var(--fm-ease-smooth);
+}
+
+.menu-bar-job-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-bar-job-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fm-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-bar-job-phase {
+  font-size: 11px;
+  color: var(--fm-muted);
+}
+
+.menu-bar-cancel {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(196,59,59,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--fm-danger);
+  font-size: 10px;
+  transition: background var(--fm-duration-fast) var(--fm-ease-out);
+  flex-shrink: 0;
+}
+.menu-bar-cancel:hover {
+  background: rgba(196,59,59,0.2);
+}
+
+.menu-bar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-bar-count {
+  font-size: 11px;
+  color: var(--fm-muted);
+  font-family: var(--fm-font-mono);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION HEADER — Typography as Structure
+   ════════════════════════════════════════════════════════════════════════ */
+
+.section-header {
+  font-family: var(--fm-font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fm-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DEMO CONTROLS — Simulation Buttons
+   ════════════════════════════════════════════════════════════════════════ */
+
+.demo-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-top: 0.5px solid var(--fm-border-soft);
+  flex-shrink: 0;
+  background: var(--fm-surface-glass-alt);
+  backdrop-filter: blur(var(--fm-blur-sm));
+  -webkit-backdrop-filter: blur(var(--fm-blur-sm));
+}
+
+.demo-bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fm-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 8px;
+}
+
+.demo-btn {
+  padding: 4px 12px;
+  border-radius: var(--fm-radius-sm);
+  border: 0.5px solid var(--fm-border);
+  background: var(--fm-surface);
+  font-family: var(--fm-font-body);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fm-fg-secondary);
+  cursor: pointer;
+  transition:
+    background var(--fm-duration-fast) var(--fm-ease-out),
+    color var(--fm-duration-fast) var(--fm-ease-out),
+    box-shadow var(--fm-duration-fast) var(--fm-ease-out),
+    transform var(--fm-duration-press) var(--fm-ease-spring);
+  box-shadow: var(--fm-edge);
+}
+.demo-btn:hover {
+  background: var(--fm-surface-raised);
+  color: var(--fm-fg);
+  box-shadow: var(--fm-shadow-sm);
+}
+.demo-btn:active {
+  transform: scale(0.97);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLL-DRIVEN FADE
+   ════════════════════════════════════════════════════════════════════════ */
+
+.content-fade-bottom {
+  position: relative;
+}
+.content-fade-bottom::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: linear-gradient(transparent, var(--fm-bg) 90%);
+  pointer-events: none;
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE / MIN-WIDTH GUARD
+   ════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 960px) {
+  .window { width: 100%; height: 100vh; border-radius: 0; }
+  .window::before { border-radius: 0; }
+  .stage { padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- ═══════════════ macOS 27 WINDOW ═══════════════ -->
+  <div class="window" id="window">
+
+    <!-- ── Title Bar ── -->
+    <div class="titlebar">
+      <div class="traffic-lights">
+        <div class="traffic-light close" title="Close"></div>
+        <div class="traffic-light minimize" title="Minimize"></div>
+        <div class="traffic-light zoom" title="Zoom"></div>
+      </div>
+      <div class="titlebar-center">ForgeMedia</div>
+    </div>
+
+    <!-- ── Toolbar ── -->
+    <div class="toolbar">
+      <span class="toolbar-title">Jobs</span>
+      <div class="toolbar-spacer"></div>
+      <div class="privacy-pill">Privacy On</div>
+      <label class="preset-select">
+        Preset:
+        <select id="presetSelect">
+          <option value="convert_h264">Convert H.264</option>
+          <option value="convert_hevc">Convert HEVC</option>
+          <option value="transcribe">Transcribe</option>
+          <option value="stitch">Stitch Clips</option>
+          <option value="merge_audio">Merge Audio</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- ── Content ── -->
+    <div class="content" id="jobList">
+
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="dropZone"
+           ondragover="event.preventDefault(); this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="event.preventDefault(); this.classList.remove('drag-over'); addJob()">
+        <div class="drop-zone-pulse"></div>
+        <div class="drop-zone-icon" id="dropIcon">↓</div>
+        <div class="drop-zone-label" id="dropLabel">Drop media files here</div>
+        <div class="drop-zone-sublabel">Privacy On: files stay on your Mac</div>
+      </div>
+
+      <!-- Job list container -->
+      <div id="jobsContainer"></div>
+    </div>
+
+    <!-- ── Demo Controls ── -->
+    <div class="demo-bar">
+      <span class="demo-bar-label">Demo</span>
+      <button class="demo-btn" onclick="addJob()">+ Add Job</button>
+      <button class="demo-btn" onclick="addCompletedJob()">+ Completed</button>
+      <button class="demo-btn" onclick="addFailedJob()">+ Failed</button>
+      <button class="demo-btn" onclick="addWarningJob()">+ Warnings</button>
+      <button class="demo-btn" onclick="clearJobs()">Clear All</button>
+      <div class="toolbar-spacer"></div>
+      <span class="demo-bar-label" style="font-size:10px;opacity:0.6;">Click traffic lights · Drag zone breathes · Cards animate · Light/Dark auto</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   FORGEMEDIA UI CONTROLLER
+
+   Handles job lifecycle state machine: idle → preparing → running →
+   validating → completed/completedWithWarnings/failed/canceled.
+
+   Every state transition is a discrete DOM mutation, not a data refresh.
+   The card IS the state.
+   ════════════════════════════════════════════════════════════════════════ */
+
+const JOB_NAMES = [
+  'interview_raw_4k.mov', 'podcast_ep42.wav', 'wedding_ceremony.mp4',
+  'archival_footage_1998.avi', 'screen_recording_tutorial.mov',
+  'drone_aerial_broll.mp4', 'voice_memo_notes.m4a'
+];
+
+const PRESET_NAMES = {
+  convert_h264: 'Convert H.264',
+  convert_hevc: 'Convert HEVC',
+  transcribe: 'Transcribe',
+  stitch: 'Stitch Clips',
+  merge_audio: 'Merge Audio'
+};
+
+const PHASE_LABELS = {
+  idle:        'Ready',
+  preparing:   'Preparing…',
+  running:     'Processing',
+  validating:  'Verifying output…',
+  completed:   'Complete',
+  failed:      'Failed',
+  canceled:    'Canceled',
+  paused:      'Paused',
+  recovered:   'Recovered'
+};
+
+let jobCounter = 0;
+
+function randomJobName() {
+  return JOB_NAMES[Math.floor(Math.random() * JOB_NAMES.length)];
+}
+
+function getSelectedPreset() {
+  return document.getElementById('presetSelect').value;
+}
+
+function getSelectedPresetName() {
+  return PRESET_NAMES[getSelectedPreset()] || 'Convert H.264';
+}
+
+/* ── Job Card Template ───────────────────────────────────────────────── */
+
+function createJobCard(id, title, phase, fraction, confidence, label, presetName, warnings) {
+  const card = document.createElement('div');
+  card.className = 'job-card';
+  card.id = 'job-' + id;
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(8px)';
+  card.innerHTML = buildCardHTML(id, title, phase, fraction, confidence, label, presetName, warnings);
+  return card;
+}
+
+function buildCardHTML(id, title, phase, fraction, confidence, label, presetName, warnings) {
+  const phaseClass = phase === 'completedWithWarnings' ? 'warnings' : phase;
+  const progressWidth = Math.round(fraction * 100);
+  const showProgress = ['preparing','running','validating'].includes(phase);
+  const isFinished = ['completed','completedWithWarnings','failed','canceled'].includes(phase);
+
+  let progressFillClass = '';
+  if (phase === 'completed' || phase === 'completedWithWarnings') progressFillClass = 'completed';
+  else if (phase === 'failed') progressFillClass = 'failed-fill';
+
+  let statusHTML = '';
+  if (phase === 'completed') {
+    statusHTML = `<div class="status-row success"><span class="status-icon">✓</span> Output saved · 1920×1080 · h264 · 2:01</div>`;
+  } else if (phase === 'completedWithWarnings') {
+    statusHTML = `<div class="status-row warning"><span class="status-icon">⚠</span> Complete · ${warnings || 'Audio layout could not be verified.'}</div>`;
+  } else if (phase === 'failed') {
+    statusHTML = `<div class="status-row error"><span class="status-icon">✕</span> Could not read video stream. Try a different file or select FFmpeg probing.</div>`;
+  }
+
+  let actionsHTML = '';
+  if (phase === 'running' || phase === 'preparing' || phase === 'validating') {
+    actionsHTML = `
+      <button class="btn btn-secondary" onclick="pauseJob('${id}')">Pause</button>
+      <button class="btn btn-danger" onclick="cancelJob('${id}')">Cancel</button>`;
+  } else if (phase === 'completed' || phase === 'completedWithWarnings') {
+    actionsHTML = `
+      <button class="btn btn-primary" onclick="event.stopPropagation()">Open Output</button>
+      <button class="btn btn-ghost" onclick="event.stopPropagation()">Share</button>`;
+  } else if (phase === 'failed') {
+    actionsHTML = `
+      <button class="btn btn-primary" onclick="retryJob('${id}')">Retry</button>
+      <button class="btn btn-ghost" onclick="event.stopPropagation()">Diagnostics</button>`;
+  } else if (phase === 'canceled') {
+    actionsHTML = `<button class="btn btn-secondary" onclick="retryJob('${id}')">Resume</button>`;
+  }
+
+  const presetLabel = presetName || 'Convert H.264';
+
+  return `
+    <div class="job-card-inner">
+      <div class="job-card-header">
+        <span class="job-card-title" title="${title}">${title}</span>
+        <span class="phase-badge ${phaseClass}">${phase === 'completedWithWarnings' ? 'WARNINGS' : phase.toUpperCase()}</span>
+      </div>
+
+      ${showProgress ? `
+      <div class="progress-section">
+        <div class="progress-track">
+          <div class="progress-fill ${progressFillClass}" style="width:${progressWidth}%"></div>
+        </div>
+        <div class="progress-meta">
+          <span class="progress-label">${label}</span>
+          <span class="progress-confidence">${confidence}</span>
+        </div>
+      </div>` : (isFinished ? statusHTML : '')}
+
+      <div class="progress-meta" style="margin-top:${showProgress ? '2px' : '8px'}">
+        <span style="font-size:11px;color:var(--fm-muted)">${presetLabel} · Privacy On</span>
+      </div>
+
+      ${actionsHTML ? `<div class="job-card-actions">${actionsHTML}</div>` : ''}
+    </div>`;
+}
+
+/* ── Add Job (simulates full lifecycle) ───────────────────────────────── */
+
+function addJob() {
+  jobCounter++;
+  const id = 'j' + jobCounter;
+  const title = randomJobName();
+  const presetID = getSelectedPreset();
+  const presetName = getSelectedPresetName();
+  const phase = 'preparing';
+  const fraction = 0;
+  const confidence = 'Estimated';
+  const label = 'Checking video streams…';
+
+  const card = createJobCard(id, title, phase, fraction, confidence, label, presetName);
+  const container = document.getElementById('jobsContainer');
+
+  // Remove empty state if present
+  const empty = container.querySelector('.empty-state');
+  if (empty) empty.remove();
+
+  // Remove drop zone from container if it's inside jobsContainer? No, keep it.
+  // Prepend card (newest first)
+  const firstCard = container.firstChild;
+  container.insertBefore(card, firstCard);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    card.style.transition = 'opacity 220ms cubic-bezier(0.25,0.46,0.45,0.94), transform 220ms cubic-bezier(0.34,1.56,0.64,1)';
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0)';
+  });
+
+  // Simulate lifecycle
+  simulateJobLifecycle(id, title);
+}
+
+function simulateJobLifecycle(id, title) {
+  const segments = 3 + Math.floor(Math.random() * 4); // 3-6 segments
+
+  // Phase 1: Preparing → Running (after 800ms)
+  setTimeout(() => updateJobCard(id, title, 'running', 0, 'Estimated', 'Starting job…'), 800);
+
+  // Phase 2: Segment progress (each 600-1200ms)
+  for (let i = 1; i <= segments; i++) {
+    const delay = 800 + i * (600 + Math.random() * 600);
+    const fraction = i / segments;
+    const label = `Processing segment ${i} of ${segments}…`;
+    setTimeout(() => {
+      if (isJobCanceled(id)) return;
+      updateJobCard(id, title, 'running', fraction, 'Measured', label);
+    }, delay);
+  }
+
+  // Phase 3: Validating
+  const validateDelay = 800 + (segments + 1) * 700;
+  setTimeout(() => {
+    if (isJobCanceled(id)) return;
+    updateJobCard(id, title, 'validating', 0.95, 'Validating', 'Verifying output…');
+  }, validateDelay);
+
+  // Phase 4: Complete
+  const completeDelay = validateDelay + 600;
+  setTimeout(() => {
+    if (isJobCanceled(id)) return;
+    updateJobCard(id, title, 'completed', 1.0, 'Measured', 'Complete');
+  }, completeDelay);
+}
+
+function updateJobCard(id, title, phase, fraction, confidence, label) {
+  const card = document.getElementById('job-' + id);
+  if (!card) return;
+
+  const presetName = getSelectedPresetName();
+
+  // Fade out
+  card.style.transition = 'opacity 120ms cubic-bezier(0.4,0,0.2,1), transform 120ms cubic-bezier(0.4,0,0.2,1)';
+  card.style.opacity = '0.6';
+  card.style.transform = 'scale(0.995)';
+
+  setTimeout(() => {
+    card.innerHTML = buildCardHTML(id, title, phase, fraction, confidence, label, presetName);
+
+    // Fade in with spring
+    requestAnimationFrame(() => {
+      card.style.transition = 'opacity 180ms cubic-bezier(0.25,0.46,0.45,0.94), transform 250ms cubic-bezier(0.34,1.56,0.64,1)';
+      card.style.opacity = '1';
+      card.style.transform = 'scale(1) translateY(0)';
+    });
+  }, 130);
+}
+
+/* ── Preset Jobs ──────────────────────────────────────────────────────── */
+
+function addCompletedJob() {
+  jobCounter++;
+  const id = 'jc' + jobCounter;
+  const title = randomJobName();
+  const presetName = getSelectedPresetName();
+  const card = createJobCard(id, title, 'completed', 1.0, 'Measured', 'Complete', presetName);
+  animateCardIn(card);
+}
+
+function addFailedJob() {
+  jobCounter++;
+  const id = 'jf' + jobCounter;
+  const title = randomJobName();
+  const presetName = getSelectedPresetName();
+  const card = createJobCard(id, title, 'failed', 0.32, 'Measured', 'Stream read error', presetName);
+  animateCardIn(card);
+}
+
+function addWarningJob() {
+  jobCounter++;
+  const id = 'jw' + jobCounter;
+  const title = randomJobName();
+  const presetName = getSelectedPresetName();
+  const card = createJobCard(id, title, 'completedWithWarnings', 1.0, 'Measured', 'Complete', presetName, 'Audio layout could not be verified. Output is usable.');
+  animateCardIn(card);
+}
+
+function animateCardIn(card) {
+  const container = document.getElementById('jobsContainer');
+  const empty = container.querySelector('.empty-state');
+  if (empty) empty.remove();
+
+  container.insertBefore(card, container.firstChild);
+  requestAnimationFrame(() => {
+    card.style.transition = 'opacity 220ms cubic-bezier(0.25,0.46,0.45,0.94), transform 220ms cubic-bezier(0.34,1.56,0.64,1)';
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0)';
+  });
+}
+
+/* ── Cancel & Retry ───────────────────────────────────────────────────── */
+
+const cancelledJobs = new Set();
+function isJobCanceled(id) { return cancelledJobs.has(id); }
+
+function cancelJob(id) {
+  cancelledJobs.add(id);
+  const presetName = getSelectedPresetName();
+  updateJobCard(id, '', 'canceled', 0.5, 'Measured', 'Canceled by user', presetName);
+}
+
+function retryJob(id) {
+  cancelledJobs.delete(id);
+  const title = randomJobName();
+  updateJobCard(id, title, 'preparing', 0, 'Estimated', 'Retrying…');
+  simulateJobLifecycle(id, title);
+}
+
+function pauseJob(id) {
+  updateJobCard(id, '', 'paused', 0.45, 'Measured', 'Paused — resume when ready', getSelectedPresetName());
+}
+
+/* ── Clear ────────────────────────────────────────────────────────────── */
+
+function clearJobs() {
+  cancelledJobs.clear();
+  const container = document.getElementById('jobsContainer');
+  const cards = container.querySelectorAll('.job-card');
+  cards.forEach((card, i) => {
+    card.style.transition = 'opacity 150ms cubic-bezier(0.4,0,0.2,1), transform 150ms cubic-bezier(0.4,0,0.2,1)';
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(-8px) scale(0.97)';
+  });
+  setTimeout(() => {
+    container.innerHTML = '';
+    showEmptyState();
+  }, 160);
+}
+
+function showEmptyState() {
+  const container = document.getElementById('jobsContainer');
+  if (container.querySelectorAll('.job-card').length > 0) return;
+  container.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-state-icon">↓</div>
+      <div class="empty-state-heading">Drop media to begin</div>
+      <div class="empty-state-body">Drag video, audio, or image files into the window. ForgeMedia processes everything locally — no cloud uploads, no telemetry.</div>
+    </div>`;
+}
+
+/* ── Drop Zone Click ─────────────────────────────────────────────────── */
+
+document.getElementById('dropZone').addEventListener('click', addJob);
+</script>
+</body>
+</html>

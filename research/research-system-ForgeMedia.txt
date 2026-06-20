@@ -1,0 +1,881 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                     FORGEMEDIA — ARCHITECTURAL LEDGER                        ║
+║                                                                              ║
+║         Session Handoff & System Blueprint v1.0                              ║
+║                                                                              ║
+║         Persona: Apple Principal Software Engineer                           ║
+║                   Anonymous Apple Design Award Recipient                     ║
+║                   (Ranked Top 5 Globally)                                    ║
+║                                                                              ║
+║         Project Stage: Phase 0 Complete                                      ║
+║                        Planning · Research · Architecture                    ║
+║                        Design Contracts · Code Scaffold Not Yet Generated    ║
+║                                                                              ║
+║         Repository: /Users/sgkrishna/MasterBase/ForgeMedia                   ║
+║         Session Log: session-ForgeMedia/session-1-ForgeMedia.md              ║
+║         Generated: 2026-06-13                                                ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  1. SYSTEM PHILOSOPHY & HARDWARE-ALIGNED ARCHITECTURE                    │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+1.1  PRODUCT THESIS
+
+ForgeMedia is positioned as a privacy-first, offline-native macOS media
+command center — not "another video converter." The addressable user base
+spans five distinct personas, all sharing a common need: serious media
+processing (transcode, stitch, transcribe, restore, batch) without cloud
+dependency, UI friction, or job fragility.
+
+  TARGET USER PERSONAS:
+
+  [1] Content Creators / YouTubers
+      - Need fast exports, captions, batch processing, reliable progress,
+        and minimal technical setup.
+      - Pain: professional tools are powerful but slow/complex; consumer
+        tools are simple but limited.
+
+  [2] Podcasters / Interview Producers
+      - Need transcription, subtitles, dubbing, audio cleanup, and
+        repeatable presets.
+      - Pain: transcription and subtitle alignment are often manual, slow,
+        or cloud-dependent.
+
+  [3] Archivists / Families / Small Studios
+      - Need to process old footage, long videos, legacy formats, and
+        preserve quality.
+      - Pain: long jobs crash, quality settings are confusing, and output
+        validation is weak.
+
+  [4] Prosumers / Filmmakers
+      - Need high-quality conversion, stitching, color/HDR awareness, and
+      - control over codecs.
+      - Pain: they want FFmpeg-level control without FFmpeg-level friction.
+
+  [5] Privacy-Conscious Users
+      - Need offline processing for sensitive media.
+      - Pain: AI transcription/dubbing often requires uploads or
+        subscriptions.
+
+  PRODUCT POSITIONING STATEMENT:
+
+  > A privacy-first, local, premium media command center for long-form
+  > creators, archivists, and studios who want fast, trustworthy, offline
+  > processing with an Apple-native interface.
+
+  CORE CUSTOMER PROMISE:
+
+  > Your media stays on your Mac. No telemetry. No analytics. No cloud
+  > uploads by default.
+
+
+1.2  MECHANICAL EMPATHY FRAMEWORK — APPLE SILICON MAPPING
+
+The architecture is designed with explicit asymmetric-core awareness to
+maximize performance-per-watt and prevent thermal throttling:
+
+  EFFICIENCY CORES (Icestorm):
+  - GRDB SQLite queue operations
+  - Metadata probing
+  - UI state observation via ValueObservation
+  - Job event persistence
+  - Agent routing decisions
+  These are latency-tolerant, high-frequency-low-intensity workloads.
+
+  PERFORMANCE CORES (Firestorm):
+  - FFmpeg process execution
+  - AVFoundation AVMutableComposition assembly
+  - Whisper.cpp transcription (ARM NEON / Accelerate)
+  - Ollama local inference dispatch
+  These occupy short bursts with high throughput demand.
+
+  APPLE NEURAL ENGINE (ANE):
+  - Reserved exclusively for Core ML .mlpackage inference paths
+    (Whisper encoder, upscaling, dubbing)
+  - Treated as an optimisation fallback, never the primary path
+  - ANE availability and model compatibility are inconsistent across
+    M-series generations
+
+  GPU (Metal):
+  - Metal Performance Shaders for upscaling pipelines
+  - Whisper Metal backend
+  - Future Core ML compute paths
+  - Resource budget tracks GPU busy state before dispatching any
+    GPU-bound agent work
+
+  THERMAL STRATEGY:
+  The menu bar UI (MenuBarExtra) is architecturally forbidden from
+  executing media work. Heavy jobs are dispatched to a background worker
+  process or XPC helper, ensuring the UI thread never contributes to
+  thermal pressure.
+
+
+1.3  DEVELOPMENT PHASE PLAN
+
+  PHASE 1 — THE PLUMBING (Current Target)
+  - SwiftUI MenuBarExtra app skeleton
+  - GRDB.swift job queue database
+  - Apple-native design system implementation
+  - Drop zone placeholder
+  - Job queue panel
+  - Protocol-based media engine (fake first, then real)
+  - Ollama client skeleton
+  - Open Design craft review checklist wired into docs/tests
+
+  PHASE 2 — THE MEDIA CORE
+  - AVFoundation composer integration
+  - Embedded FFmpeg binary for structural media tasks
+  - Whisper.cpp transcription/subtitles
+  - Presets for "restore", "subtitle", "convert", "merge", "dub"
+  - Archive extraction via ZIPFoundation/libarchive
+
+  PHASE 3 — THE BRAIN
+  - Local Ollama client for planning/routing prompts
+  - MCP-style tool registry backed by JSON schemas
+  - Local agent mesh with bounded token/time budgets
+  - Progress, cancellation, retry, logs, crash-safe job recovery
+
+  PHASE 4 — THE HEAVY AI
+  - Whisper models converted to .mlpackage via Core ML Tools
+  - Wav2Lip/SadTalker-style lip sync prototype
+  - Core ML / MLX / Metal video upscaling
+  - Full autonomous self-healing loop with human approval gates
+  - Vision-based UI QA using local multimodal models
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  2. VISUAL MASTERY, TYPOGRAPHIC SYSTEMS & BEHAVIORAL PSYCHOLOGY          │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+2.1  EMOTIONAL & NEUROLOGICAL ANCHORS
+
+ForgeMedia's brand psychology targets calm capability — the opposite of
+"neon chrome gaming converter" energy. The emotional vector is:
+
+  > "My media is safe, the app is working, I can trust it with a 5-hour
+  > job and walk away."
+
+Key psychological decisions:
+
+  NO DARK BASE
+  Eliminates the "power user tool" cliché. Signals approachability,
+  cleanliness, professionalism. Explicit instruction from the ShiftMedia
+  legacy redesign notes.
+
+  NO COLOR-AS-BACKGROUND
+  Color is reserved for affordance and state:
+    - Accent (--fm-accent #0066cc) for primary action per panel
+    - Green (--fm-success #1f8f55) for completion
+    - Amber (--fm-warning #b7791f) for warnings
+    - Red (--fm-danger #c43b3b) for failures
+  Never decoration. Never gradient-as-brand.
+
+  NEUTRAL MATERIAL HIERARCHY
+  Creates depth through lightness, not shadow or gradient:
+    - Background: #f5f5f7
+    - Surface: #ffffff
+    - Surface raised: #fbfbfd
+    - Border soft: #e8e8ed
+    - Border: #d2d2d7
+
+  RESTRAINED ACCENT
+  Apple blue #0066cc used only for:
+    - One primary action per panel
+    - One progress signal per job
+  This prevents visual noise and preserves scannability.
+
+
+2.2  TYPOGRAPHIC INFRASTRUCTURE
+
+  DISPLAY (Headlines):
+  -apple-system, BlinkMacSystemFont, "SF Pro Display"
+  - Short, confident, task-oriented
+  - Laser-sharp letter-spacing: -0.045em for large, -0.02em for medium
+
+  BODY (Job names, metadata, phase labels):
+  -apple-system, BlinkMacSystemFont, "SF Pro Text"
+  - Calm, informative, never promotional
+  - Line-height: 1.42–1.47
+
+  MONO (Technical metadata, checksums, engine logs):
+  "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace
+  - Compact, aligned rows, never paragraphs
+
+  SCALE:
+  No hard-coded px values beyond design contract tokens. Respects system
+  Dynamic Type and baseline grid via SwiftUI system fonts.
+
+
+2.3  FLUID MOTION & INTERFACE FUNDAMENTALS
+
+Motion is state-reactive, not decorative. Every animation serves a
+specific communicative purpose.
+
+  APPROVED MOTION PATTERNS:
+
+  Pattern              | Duration  | Behaviour
+  ---------------------|-----------|-----------------------------------
+  Button press         | 80–120ms  | Tiny scale 0.98, no bounce
+  Panel entry          | 220ms     | Ease-out, opacity + Y translation
+  Progress fill        | 150–300ms | Smooth, never flashing
+  Phase reveal         | 180–250ms | Only when phase actually changes
+  Success check        | 180ms     | One-shot, no looping sparkle
+  Error shake          | 180–220ms | Use sparingly; pair with error text
+  Drag morph (spring)  | resp 0.35 | dampingFraction 0.86
+
+  FREQUENCY RULES:
+  - Frequent interactions: nearly instant (<200ms)
+  - Occasional panels: 200–350ms
+  - Rare completion moments: richer motion allowed
+
+  REDUCED MOTION:
+  Must remove all transform/scale/rotate animations.
+  Preserve opacity/color transitions only when state-critical.
+  Use @media (prefers-reduced-motion: reduce) / SwiftUI equivalent.
+
+  EXPLICITLY AVOID:
+  - Endless spinners for media jobs
+  - Decorative looping gradients
+  - Motion as the only indication of state
+  - Progress bars that imply false precision
+  - Skeleton shimmer after content is available
+  - Framer-style black void as main surface
+  - "Working..." / "Almost done..." placeholder copy
+
+
+2.4  HUMAN INTERFACE GUIDELINES (HIG) SATURATION
+
+Components explicitly anchored to HIG rules:
+
+  - MenuBarExtra for native macOS menu bar presence
+  - Material surfaces (.regularMaterial, .ultraThinMaterial, .thinMaterial)
+  - SF Symbols monoline icons
+  - System shapes with continuous corner radii
+  - Dynamic system layout anchors
+  - Spring physics matching HIG animation guidelines
+  - Reduced-motion support per HIG Accessibility
+
+
+2.5  STATE COVERAGE — 11 JOB LIFECYCLE STATES
+
+Every user-facing surface must handle:
+
+  1. Idle / ready    — media loaded, waiting for action
+  2. Preparing       — probing, estimating, building segment plan
+  3. Running         — work underway with measured/estimated progress
+  4. Taking longer   — phase exceeds 15s threshold with fallback copy
+  5. Paused          — user or system pause with resume point
+  6. Completed       — success with output location and checks
+  7. Completed w/ warnings — usable but non-blocking issues found
+  8. Failed          — unrecoverable with cause and next action
+  9. Canceled        — user-initiated stop with cleanup report
+  10. Recovered      — post-crash/relaunch with partial output options
+  11. Edge           — long filenames, missing metadata, RTL text,
+                       low disk space
+
+Three feedback surfaces:
+  - Menu bar: compact phase + progress + pause/cancel
+  - Main window: richer job timeline + quality checks + recovery
+  - Processing sheet: step list + engine progress + collapsed logs
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  3. LOW-LEVEL TECHNOLOGY STACK & PURE OS EXPLOITATION                   │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+3.1  LANGUAGE CONVERGENCE
+
+  EXCLUSIVE: Swift 6
+  - No Objective-C bridging planned
+  - Async/await, actors, structured concurrency throughout
+
+  C BOUNDARIES (Managed via Process invocation):
+  - FFmpeg — statically compiled binary in app bundle
+  - Whisper.cpp — binary dependency with CPU/Metal/Core ML backends
+  - Core ML .mlpackage runtime via native framework
+
+  BOUNDARY MANAGEMENT:
+  - Process with Pipe for stdout/stderr streaming
+  - AsyncSequence for progress events from child processes
+  - Actor isolation for database access and resource budget state
+
+
+3.2  NATIVE FRAMEWORK SATURATION
+
+  Framework          | Module                | Purpose
+  -------------------|-----------------------|-----------------------------------
+  SwiftUI            | ForgeMediaApp/UI      | MenuBarExtra, window, all UI
+  AppKit             | ForgeMediaApp (bridge)| Security-scoped bookmarks, file
+                     |                       | coordination, advanced drag zones
+  GRDB.swift         | ForgeMediaData        | SQLite queue, ValueObservation
+  AVFoundation       | ForgeMediaMedia       | AVMutableComposition, export
+  Core Graphics      | ForgeMediaMedia       | Whisper.cpp CPU backend
+  Accelerate         | ForgeMediaMedia       | vDSP/vImage for media processing
+  Metal (future)     | ForgeMediaMedia       | Core ML compute, upscaling
+  Core ML (future)   | ForgeMediaAI          | Whisper encoder, upscaling
+  AsyncAlgorithms    | Cross-module          | Progress event streams
+
+
+3.3  STORAGE & PERSISTENCE ARCHITECTURE
+
+  PRIMARY: GRDB.swift on SQLite
+  - DatabaseQueue for single-user local app
+  - ValueObservation for async SwiftUI streaming
+  - Migrations for schema versioning
+
+  RECOMMENDED TABLES:
+
+  jobs
+    id, title, sourceURL, outputURL, presetID, phase, progressFraction,
+    progressConfidence, progressLabel, createdAt, updatedAt, lastCheckpoint,
+    privacyMode, cancellationRequested
+
+  job_events
+    id, jobID, phase, message, progressFraction, progressConfidence,
+    createdAt
+
+  presets
+    id, name, engine, outputContainer, videoCodec, audioCodec,
+    subtitleBehavior, privacyMode
+
+  job_checkpoints (future)
+    id, jobID, segmentIndex, byteOffset, checkpointPath, createdAt
+
+  job_outputs (future)
+    id, jobID, url, duration, width, height, videoCodec, audioCodec,
+    checksum, warnings
+
+  media_assets (future)
+    id, url, sha256, duration, width, height, codec, audioCodec
+
+  agent_runs (future)
+    id, jobID, role, model, promptHash, outputSummary, tokenEstimate,
+    createdAt
+
+  quality_checks (future)
+    id, jobID, checkKind, passed, metricValue, details
+
+  privacy_settings (future)
+    key, value
+
+
+3.4  UNORTHODOX RESOURCE UTILIZATION
+
+  CHUNKED PROCESSING FOR LONG VIDEOS
+  - Probe first → split into resumable segments → process individually
+  - Preserve checkpoints in GRDB after each segment
+  - Avoid loading 5-hour video entirely into memory
+  - Partial output recovery on crash or cancellation
+
+  THROTTLED UI PROGRESS
+  - ValueObservation frequency deliberately limited
+  - Prevents SwiftUI churn during rapid FFmpeg progress events
+  - Progress confidence labels: unknown | estimated | measured
+
+  CANCELLATION PROPAGATION
+  - Process.interrupt() / Process.terminate() for child processes
+  - GRDB checkpoint persistence enables resume
+  - Temporary file cleanup on cancellation
+
+  PRIVACY-FIRST NETWORKING
+  - No analytics SDK initialisation
+  - No telemetry endpoints compiled in
+  - No automatic crash upload
+  - Network client conditionally compiled
+  - Gated behind explicit PrivacySettings flags
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  4. DETERMINISTIC STATE MANAGEMENT & DATA PIPELINE ARCHITECTURE          │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+4.1  ZERO-COST STATE ENGINE
+
+Job lifecycle is a discriminated union (JobPhase enum) with 11 states:
+
+  idle -> preparing -> probing -> planning -> running -> validating ->
+    completed | completedWithWarnings | failed | paused | canceled |
+    recovered
+
+KEY PROPERTIES:
+  - progressConfidence (unknown | estimated | measured) tracked
+    independently of progressFraction to prevent false precision
+  - UI views are pure projections of domain state
+  - No side effects in views
+  - No hidden mutations
+
+
+4.2  ZERO-I/O-BOTTLENECK PERSISTENCE
+
+  Database: GRDB DatabaseQueue
+  - Single-user local app configuration
+  - ValueObservation for async Swift streaming (not Combine, not RxSwift)
+  - Migrations for all schema changes
+
+  INITIAL MIGRATION: "2026061301-initial-schema"
+  - Creates presets, jobs, job_events tables
+  - Includes rollback for each migration
+
+
+4.3  ASYNCHRONOUS PROCESSING LAYER
+
+  @MainActor          — all SwiftUI views
+  actor isolation     — database writer, resource budget, cancellation
+                        coordinator
+  async functions     — all Process launches, progress parsing
+  Task                — background worker dispatch with cooperative
+                        cancellation
+  AsyncSequence       — progress event streaming from child processes
+
+
+4.4  PROGRESS FEEDBACK ARCHITECTURE
+
+  Copy before percentage:
+
+    "Transcribing segment 8 of 14…"  — good
+    "Working…"                       — bad
+
+  Progress confidence labels:
+
+    "Estimated"   — based on file size, segment count, or local timing
+    "Measured"    — based on completed segments or engine progress
+    "Unknown"     — engine cannot report progress yet
+    "Validating"  — work complete but output checks running
+
+  Error recovery rules:
+
+    - First retry: immediate
+    - Second/third: exponential backoff (2s, 4s, 8s max)
+    - After 3 failures: replace "Retry" with "Contact support"
+      plus copyable error ID
+    - Never clear user input on failure
+    - Never blame the user for engine failures
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  5. MECHANICAL ENGINEERING BEST PRACTICES & EXTREME OPTIMISATION         │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+5.1  TEST ARCHITECTURE (PLANNED)
+
+  FRAMEWORKS:
+  - Swift Testing / XCTest for unit, integration, and adversarial tests
+  - XcodeBuildMCP for automated build/test/run from Claude Code
+
+  ADVERSARIAL FIXTURE SET (to implement early):
+
+    [ ] Drop zero-byte files
+    [ ] Drop unsupported file types
+    [ ] Drop huge files
+    [ ] Remove output folder mid-job
+    [ ] Kill FFmpeg process during encode
+    [ ] Cancel during AVFoundation export
+    [ ] Launch app with corrupt SQLite DB
+    [ ] Click menu bar during active render
+    [ ] Start app with no Ollama server
+    [ ] Start app with missing Whisper model
+    [ ] Low disk simulation
+    [ ] Duplicate input checksum
+    [ ] Interrupt app during GRDB migration
+
+  UI QA (MVP):
+  - XCTest UI tests for menu flow
+  - SwiftUI previews for all component states
+  - Screenshot snapshots for dark/light mode
+  - Manual HIG review checklist
+
+  UI QA (Later):
+  - Local vision model compares screenshots to layout constraints
+  - Detect overlapping text, stretched panels, missing labels,
+    unreadable contrast
+
+
+5.2  UNCOMPROMISING SECURITY & PRIVACY PROTOCOLS
+
+  - Hardened Runtime enabled
+  - App Sandbox with minimum entitlements:
+      - user-selected files (read/write)
+      - network client (localhost only for Ollama)
+      - microphone only if recording required
+  - Privacy On by default:
+      - No telemetry
+      - No analytics
+      - No cloud uploads
+      - No remote AI unless explicitly enabled
+      - No automatic crash upload
+  - Keychain for any future credentials or model license tokens
+  - Local data in user-controlled app support directories:
+      - Easy to inspect
+      - Easy to export
+      - Easy to delete
+  - No secrets, credentials, or absolute paths committed
+
+
+5.3  APP STORE ORCHESTRATION & DISTRIBUTION
+
+  DISTRIBUTION TARGETS:
+  - Mac App Store
+  - Direct signed/notarized DMG (ForgeMedia.dmg)
+  - Install target: ~/Applications/ForgeMedia.app
+
+  REQUIREMENTS:
+  - Third-party license attribution:
+      - FFmpeg (GPL — requires MAS licensing audit)
+      - Whisper.cpp (MIT)
+      - GRDB.swift (MIT)
+      - ZIPFoundation (MIT)
+  - Privacy nutrition labels
+  - MAS entitlements audit for FFmpeg static binary
+  - App icon: ForgeMedia.app icon + menu bar icons (active + inactive)
+
+  VERIFICATION BEFORE SHIPPING:
+  - [ ] Test on Intel + Apple Silicon
+  - [ ] Sandbox entitlements match distribution path
+  - [ ] No secrets in committed files
+  - [ ] Licenses documented in Settings > About
+  - [ ] Hardened Runtime validated
+  - [ ] Privacy labels prepared for App Store Connect
+  - [ ] Support metadata and screenshots ready
+
+
+5.4  SELF-HEALING VERIFICATION LOOP
+
+  Code change
+    -> Unit tests
+    -> XCTest UI tests
+    -> Adversarial media tests
+    -> Screenshot/layout review
+    -> Log analysis
+    -> Patch
+    -> Repeat
+
+  AGENT MESH (6 roles):
+
+  1. Core Developer Agent
+     - Builds Swift models, GRDB schema, media services, core views
+
+  2. Design & Layout Agent
+     - Applies Apple-native layout, material blur, spring constants,
+       negative space
+
+  3. Media/AI Engineering Agent
+     - FFmpeg probe/progress, AVFoundation composer, Whisper wrapper,
+       Ollama routing
+
+  4. Adversarial QA Agent
+     - Fuzzes files, paths, cancellation, low disk, model failure,
+       menu-bar clicks, restart recovery
+
+  5. Vision/Layout Review Agent
+     - Screenshots, overlap/clutter/contrast detection,
+       reduced-motion regressions
+
+  6. Release Engineer Agent
+     - Signing, sandbox, entitlements, licenses, distribution metadata
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  6. MICRO-COMPONENT FOCUS: THE "ICON COMPOSER" DESIGN & ENGINEERING      │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+6.1  APP ICON
+
+  STATUS: Vision defined, design not yet executed.
+
+  CREATIVE DIRECTION:
+  - Symbolic representation of forging/transformation
+  - Anvil, gear, or interlocking media element abstraction
+  - Monoline weight consistent with SF Symbols
+  - No text, no photo-realism, no gradients
+  - Pristine scaling across all Mac resolutions
+
+  AVOID:
+  - Rounded-square-with-mask generic pattern
+  - Glossy reflections
+  - "Neon forge" aesthetic
+  - Emoji-based icons
+
+
+6.2  MENU BAR ICONS
+
+  Two distinct assets required:
+  - Active state: app has active/running jobs (accented or animated dot)
+  - Inactive state: app is idle (dimmed or static)
+
+  CONSTRAINTS:
+  - Template images (monochrome, respecting system accent)
+  - SF Symbol alignment
+  - Must be legible at 16x16pt in menu bar
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  7. THE ARCHITECTURAL RATIONALE LEDGER                                   │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+  DESIGN/ENGINEERING CHOICE             | LATENT PROBLEM OVERCOME           | UNORTHODOX RATIONALE
+  --------------------------------------|-----------------------------------|--------------------------------------
+  No dark base / no color background    | User rejected ShiftMedia dark     | Abandons dark-UI templates. Instantly
+                                        | direction; market saturation of   | signals professional, calm, privacy-
+                                        | neon gaming converters            | respecting. Higher WTP from studios.
+  --------------------------------------|-----------------------------------|--------------------------------------
+  GRDB ValueObservation over            | Core Data change tracking         | Direct SQLite, async Swift, zero
+  Core Data                             | overhead and merge complexity     | conflict resolution, trivially
+                                        | for single-user SQLite app        | testable migrations.
+  --------------------------------------|-----------------------------------|--------------------------------------
+  FFmpeg + AVFoundation dual path       | Neither alone covers all use      | AVFoundation for native AS fast
+                                        | cases at native performance       | paths (same-container stitching).
+                                        |                                   | FFmpeg for edge cases (containers,
+                                        |                                   | filters, subtitles, legacy formats).
+  --------------------------------------|-----------------------------------|--------------------------------------
+  Whisper.cpp first, not Core ML        | Core ML ANE support is            | Slightly slower CPU path. Benefit:
+  first                                 | inconsistent across M-series      | reliable offline transcription day 1.
+                                        | generations                       | Core ML added as optimization with
+                                        |                                   | explicit fallback.
+  --------------------------------------|-----------------------------------|--------------------------------------
+  Privacy On by default                 | User's stated product             | No analytics, no usage data sales.
+                                        | requirement + competitive moat    | Direct trust signal. Higher WTP.
+                                        |                                   | No GDPR/PIPL compliance burden.
+  --------------------------------------|-----------------------------------|--------------------------------------
+  Chunked processing with               | 5-hour videos crash without       | Segment planning overhead. Benefit:
+  checkpoints                           | recovery in existing tools        | resume from checkpoint, partial
+                                        |                                   | output, accurate progress.
+  --------------------------------------|-----------------------------------|--------------------------------------
+  Menu bar never does media work        | Existing converters freeze UI     | XPC/background worker cost. Benefit:
+                                        | during encodes                    | menu bar always responsive, positive
+                                        |                                   | reviews for reliability.
+  --------------------------------------|-----------------------------------|--------------------------------------
+  One accent per surface                | Over-designed panels with 3+      | Less "features" visibility. Benefit:
+                                        | accents look cluttered            | scannable hierarchy, eye goes to
+                                        |                                   | exactly one action.
+  --------------------------------------|-----------------------------------|--------------------------------------
+  progressConfidence independent        | Progress bars showing false       | Extra enum field. Benefit: users
+  of progressFraction                   | precision erode user trust        | trust "Segment 8 of 14 (measured)"
+                                        |                                   | over meaningless percentage.
+  --------------------------------------|-----------------------------------|--------------------------------------
+  AVFoundation before FFmpeg            | Easy to default to FFmpeg for     | AVFoundation has fewer features but
+                                        | everything, losing native AS      | native HW acceleration. FFmpeg is
+                                        | hardware acceleration             | the fallback, not the default.
+  --------------------------------------|-----------------------------------|--------------------------------------
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  DELIVERABLES CREATED IN THIS SESSION                                   │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+  DOCUMENTS (8 files):
+
+  docs/task_template.md                                 [161 lines]
+    Full task specification template with 38 acceptance criteria,
+    6-phase implementation plan, review checklist, Open Design references.
+
+  docs/performance-quality.md                           [148 lines]
+    5-hour video engineering requirements, chunked processing, quality
+    gates, pre/during/post checklists, concurrency limits.
+
+  docs/privacy-first.md                                 [126 lines]
+    Privacy-first product policy, default behaviour, optional local data
+    rules, settings screen spec, customer benefit positioning.
+
+  docs/design-system.md                                 [262 lines]
+    Complete Apple-native design contract: colour tokens, typography,
+    spacing/layout, motion language, component specs, 9 state types,
+    accessibility, implementation guidance.
+
+  docs/architecture.md                                  [450 lines]
+    Full macOS architecture blueprint: MVP/v1/later scope, 8-module
+    package layout, native shell spec, data layer, media engine, AI
+    layer, agent orchestration, privacy/security, self-healing loop,
+    10-step implementation plan.
+
+  docs/agent-orchestration.md                           [209 lines]
+    6-agent mesh roles, MCP tool registry with safety matrix,
+    self-healing pipeline, failure handling, Graphify integration.
+
+  docs/interaction-feedback-states.md                   [331 lines]
+    10 job lifecycle states with copy examples per state, progress
+    confidence labels, output formation, 3 feedback surfaces, error
+    recovery rules, accessibility requirements.
+
+  docs/prototypes/forge-media-progress-prototype.html   [855 lines]
+    Interactive HTML prototype demonstrating 5 states with Apple-native
+    design system, motion tokens, privacy pill, phase indicators.
+
+  SWIFT SCAFFOLD (1 file):
+
+  docs/swift-architecture/ForgeMediaArchitecture.swift  [265 lines]
+    Protocol-first Swift scaffold: JobPhase, ProgressConfidence,
+    MediaPreset, JobRecord, JobEvent, ProcessingEngine protocol,
+    TranscriptEngine protocol, WhisperModelDescriptor, LocalAgentRouter,
+    PrivacySettings, AgentBudget, AgentContext, SystemLoadSnapshot,
+    DatabaseMigrations (3 tables).
+
+  SESSION LOG (1 file):
+
+  session-ForgeMedia/session-1-ForgeMedia.md            [2068 lines]
+    Full session transcript from initial prompt through final export
+    command. Covers all research, architectural decisions, design
+    system creation, user persona research, and documentation.
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  DESIGN & ENGINEERING CONSTRAINTS (NON-NEGOTIABLE)                      │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+  1. No dark base. Visual foundation is #f5f5f7 light neutral. Colour
+     is state signal, not background.
+
+  2. No telemetry/analytics by default. Privacy On is the default and
+     the selling point.
+
+  3. Menu bar must stay responsive. Architectural prohibition on media
+     work in UI thread.
+
+  4. 5-hour video must not crash. Chunked, resumable, checkpointed
+     processing is mandatory.
+
+  5. Output quality must be validated. Checksums, duration matching,
+     codec/bitrate/audio verification per job.
+
+  6. AVFoundation first, FFmpeg second. Use native Apple paths where
+     possible. FFmpeg for edge cases only.
+
+  7. ANE is a fallback, not a promise. Core ML acceleration is an
+     optimisation, never a guarantee.
+
+  8. Privacy prompts must be explicit. "Privacy On: local processing"
+     language, never "we may use your data."
+
+  9. One accent per surface. Sparse colour usage prevents visual noise.
+
+  10. Reduced motion must be respected. No transform/scale/rotate
+      animation when prefers-reduced-motion is active.
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  OPEN QUESTIONS FOR NEXT SESSION                                        │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+  [1] Swift Package Manager vs Xcode project?
+      SPM is the modern Apple standard. Xcode project may be simpler for
+      initial MenuBarExtra target.
+
+  [2] Minimum macOS version?
+      macOS 14 (Sonoma) or macOS 15 (Sequoia)? Determines available
+      SwiftUI APIs.
+
+  [3] FFmpeg bundling strategy?
+      Static binary in Resources? Or user-provided path fallback?
+
+  [4] Whisper.cpp model distribution?
+      Bundled in app? Or downloaded on first launch?
+
+  [5] Ollama: MVP requirement or v1?
+      Architecture plan lists it in MVP. Can be deferred if scope needs
+      trimming.
+
+  [6] First implementation target?
+      MenuBarExtra shell with fake engine? Or real FFmpeg probe first?
+
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  IMMEDIATE NEXT ACTIONS                                                  │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+  STEP 1 — Create Swift package / Xcode project
+  Structure at ForgeMedia/ with 8 modules:
+    ForgeMediaApp/
+    ForgeMediaDomain/
+    ForgeMediaData/
+    ForgeMediaMedia/
+    ForgeMediaAI/
+    ForgeMediaUI/
+    ForgeMediaWorkers/
+    ForgeMediaDiagnostics/
+    Tests/
+
+  STEP 2 — Implement ForgeMediaDomain + ForgeMediaData
+  Use scaffold in docs/swift-architecture/ForgeMediaArchitecture.swift.
+  Add GRDB migrations, JobRecord, MediaPreset, JobEvent models.
+
+  STEP 3 — Build fake ProcessingEngine
+  Enables UI development without real media binaries.
+
+  STEP 4 — Wire MenuBarExtra + main window
+  Drop zone, job queue panel, Apple-native design system from
+  docs/design-system.md.
+
+  STEP 5 — Add real FFmpeg probe/progress parser
+  Behind MediaEngine protocol. Then AVFoundation composer path.
+
+  STEP 6 — Add Whisper.cpp wrapper
+  CPU-only MVP first. Optional Core ML acceleration later.
+
+  STEP 7 — Run adversarial tests
+  From fixture list in docs/architecture.md before claiming
+  bulletproof status.
+
+  DESIGN CONTRACT REFERENCE PATH FOR AI AGENTS:
+
+    Design system:         docs/design-system.md
+    Interaction states:    docs/interaction-feedback-states.md
+    Architecture:          docs/architecture.md
+    Privacy:               docs/privacy-first.md
+    Performance:           docs/performance-quality.md
+    Task template:         docs/task_template.md
+    Prototype:             docs/prototypes/forge-media-progress-prototype.html
+    Swift scaffold:        docs/swift-architecture/ForgeMediaArchitecture.swift
+
+    Open Design Apple resources (read these):
+      /Users/sgkrishna/MasterBase/design/open-design/
+        design-systems/apple/DESIGN.md
+        design-systems/apple/tokens.css
+        design-systems/apple/components.html
+        craft/anti-ai-slop.md
+        craft/animation-discipline.md
+
+    Apple first-principles:
+      /Users/sgkrishna/MasterBase/design/Apple-Native-OS-Design/
+        apple-design-first-principle/SKILL.md
+
+    Legacy reference (adapt, don't copy):
+      /Users/sgkrishna/MasterBase/ShiftMedia-V1/
+        instructions-ShiftMedia-premium-redesign.pdf
+
+  ── End of Architectural Ledger ──

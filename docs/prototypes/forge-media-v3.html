@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForgeMedia v3 — macOS 27 Golden Gate</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   FORGEMEDIA v3 — Design System v2 · macOS 27 Golden Gate
+
+   Visual refresh addressing the "plain/boring" critique:
+   - Atmospheric gradient mesh replacing flat bg
+   - 4-tier glass material system
+   - Expanded accent palette (blue/amber/teal/rose)
+   - Animated drop zone with ambient glow
+   - Hover depth on cards
+   - Window chrome micro-texture
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── TOKENS ──────────────────────────────────────────────────────────── */
+:root {
+  /* Atmosphere */
+  --fm-bg:          #f5f5f7;
+  --fm-atmo-warm:   rgba(220,180,150,0.05);
+  --fm-atmo-cool:   rgba(180,200,220,0.04);
+
+  /* Glass tiers */
+  --fm-glass-base:     rgba(245,245,247,0.68);
+  --fm-glass-surface:  rgba(255,255,255,0.72);
+  --fm-glass-raised:   rgba(255,255,255,0.84);
+  --fm-glass-float:    rgba(255,255,255,0.94);
+
+  /* Text */
+  --fm-fg:          #1d1d1f;
+  --fm-fg-2:        #424245;
+  --fm-muted:       #6e6e73;
+
+  /* Borders */
+  --fm-border:      rgba(0,0,0,0.07);
+  --fm-border-strong: rgba(0,0,0,0.12);
+
+  /* Accents */
+  --fm-accent:      #0066cc;
+  --fm-accent-hover:#0077ed;
+  --fm-accent-glow: rgba(0,102,204,0.10);
+  --fm-amber:       #d4890c;
+  --fm-amber-glow:  rgba(212,137,12,0.10);
+  --fm-teal:        #0b7b8c;
+  --fm-teal-glow:   rgba(11,123,140,0.08);
+  --fm-rose:        #c4456e;
+  --fm-rose-glow:   rgba(196,69,110,0.08);
+  --fm-success:     #1a8c5c;
+  --fm-warning:     #b7791f;
+  --fm-danger:      #d43b3b;
+
+  /* Geometry */
+  --fm-r-sm:  8px;
+  --fm-r:     12px;
+  --fm-r-lg:  18px;
+  --fm-r-win: 10px;
+  --fm-r-pill: 980px;
+
+  /* Type */
+  --fm-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+  --fm-body:    -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  --fm-mono:    "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  /* Motion */
+  --ease-out:   cubic-bezier(0.25,0.46,0.45,0.94);
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --ease-smooth:cubic-bezier(0.4,0,0.2,1);
+  --ease-card:  cubic-bezier(0.05,0.7,0.1,1);
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.05);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:  0 12px 36px rgba(0,0,0,0.14);
+  --shadow-edge:0 0 0 0.5px rgba(0,0,0,0.06);
+
+  /* Blur */
+  --blur-base:  40px;
+  --blur-card:  20px;
+  --blur-raised:12px;
+  --blur-float: 8px;
+  --saturate:   180%;
+}
+
+/* ── DARK MODE ───────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fm-bg:          #121214;
+    --fm-atmo-warm:   rgba(100,80,70,0.06);
+    --fm-atmo-cool:   rgba(70,85,110,0.05);
+    --fm-glass-base:  rgba(18,18,20,0.68);
+    --fm-glass-surface: rgba(28,28,30,0.72);
+    --fm-glass-raised:  rgba(44,44,46,0.84);
+    --fm-glass-float:   rgba(58,58,60,0.94);
+    --fm-fg:          #f5f5f7;
+    --fm-fg-2:        #98989d;
+    --fm-muted:       #636366;
+    --fm-border:      rgba(255,255,255,0.07);
+    --fm-border-strong: rgba(255,255,255,0.12);
+    --fm-accent:      #0a84ff;
+    --fm-accent-hover:#409cff;
+    --fm-accent-glow: rgba(10,132,255,0.14);
+    --fm-amber:       #e8a817;
+    --fm-amber-glow:  rgba(232,168,23,0.14);
+    --fm-teal:        #30b87c;
+    --fm-teal-glow:   rgba(48,184,124,0.10);
+    --fm-rose:        #e05a7c;
+    --fm-rose-glow:   rgba(224,90,124,0.10);
+    --fm-success:     #30b87c;
+    --fm-warning:     #d4a035;
+    --fm-danger:      #e85a5a;
+    --shadow-sm:  0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
+    --shadow-lg:  0 12px 36px rgba(0,0,0,0.5);
+    --shadow-edge:0 0 0 0.5px rgba(255,255,255,0.06);
+  }
+}
+
+/* ── REDUCED MOTION ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:0s!important; transition-duration:0s!important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESET
+   ════════════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{ margin:0; padding:0; box-sizing:border-box; }
+html,body{ height:100%; font-family:var(--fm-body); font-size:13px; color:var(--fm-fg); background:#000; -webkit-font-smoothing:antialiased; overflow:hidden; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STAGE — Atmospheric Canvas
+   ════════════════════════════════════════════════════════════════════════ */
+.stage {
+  width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 30%, var(--fm-atmo-warm) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 20% 80%, var(--fm-atmo-cool) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(128,128,128,0.08) 0%, transparent 70%),
+    #000;
+  padding:40px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WINDOW — Tier 1 Glass Base
+   ════════════════════════════════════════════════════════════════════════ */
+.window {
+  width:940px; height:660px;
+  background: var(--fm-glass-base);
+  backdrop-filter: blur(var(--blur-base)) saturate(var(--saturate));
+  -webkit-backdrop-filter: blur(var(--blur-base)) saturate(var(--saturate));
+  border-radius: var(--fm-r-win);
+  box-shadow:
+    var(--shadow-edge),
+    0 0 0 1px rgba(0,0,0,0.10),
+    0 20px 60px rgba(0,0,0,0.30),
+    0 6px 16px rgba(0,0,0,0.16);
+  display:flex; flex-direction:column; overflow:hidden; position:relative;
+}
+
+/* Window inner highlight */
+.window::before {
+  content:''; position:absolute; inset:0; border-radius:var(--fm-r-win);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 35%, transparent 70%);
+  pointer-events:none; z-index:100;
+}
+
+/* Window grain texture */
+.window::after {
+  content:''; position:absolute; inset:0; border-radius:var(--fm-r-win);
+  opacity: 0.015; pointer-events:none; z-index:99;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TITLE BAR
+   ════════════════════════════════════════════════════════════════════════ */
+.titlebar {
+  height:52px; display:flex; align-items:center; padding:0 16px;
+  flex-shrink:0; -webkit-app-region:drag; position:relative; z-index:10;
+}
+.titlebar-center {
+  position:absolute; left:50%; transform:translateX(-50%);
+  font-family:var(--fm-display); font-size:13px; font-weight:600;
+  color:var(--fm-fg); letter-spacing:-0.01em; opacity:0.8;
+}
+
+/* Traffic lights */
+.traffic-lights { display:flex; gap:8px; -webkit-app-region:no-drag; z-index:11; }
+.tl {
+  width:12px; height:12px; border-radius:50%; position:relative; cursor:pointer;
+  transition: background 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+}
+.tl::after {
+  content:''; position:absolute; inset:2px; border-radius:50%; opacity:0;
+  transition:opacity 80ms var(--ease-out);
+}
+.tl.close{ background:#ed6a5e; box-shadow:0 0 0 0.5px rgba(0,0,0,0.08); }
+.tl.close:hover{ background:#c94b3f; }
+.tl.close:hover::after{ opacity:1; background:linear-gradient(135deg,rgba(255,255,255,0.35),transparent 60%); }
+.tl.minimize{ background:#f5bd4f; box-shadow:0 0 0 0.5px rgba(0,0,0,0.06); }
+.tl.minimize:hover{ background:#d4a235; }
+.tl.zoom{ background:#61c554; box-shadow:0 0 0 0.5px rgba(0,0,0,0.06); }
+.tl.zoom:hover{ background:#4da83f; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOLBAR
+   ════════════════════════════════════════════════════════════════════════ */
+.toolbar {
+  height:44px; display:flex; align-items:center; padding:0 16px; gap:10px;
+  flex-shrink:0; border-bottom:0.5px solid var(--fm-border); position:relative; z-index:5;
+}
+.toolbar-title { font-family:var(--fm-display); font-size:13px; font-weight:600; color:var(--fm-fg); }
+.toolbar-spacer { flex:1; }
+
+.privacy-pill {
+  display:inline-flex; align-items:center; gap:6px; padding:4px 12px;
+  border-radius:var(--fm-r-pill); background:rgba(26,140,92,0.08); color:var(--fm-success);
+  font-size:11px; font-weight:600; cursor:default; user-select:none;
+}
+.privacy-pill::before {
+  content:''; width:6px; height:6px; border-radius:50%; background:var(--fm-success);
+  box-shadow:0 0 0 3px rgba(26,140,92,0.15);
+}
+
+.preset-select {
+  display:inline-flex; align-items:center; gap:6px; padding:5px 12px;
+  border-radius:var(--fm-r-sm); background:var(--fm-glass-raised);
+  backdrop-filter:blur(var(--blur-raised)); -webkit-backdrop-filter:blur(var(--blur-raised));
+  border:0.5px solid var(--fm-border); box-shadow:var(--shadow-edge);
+  font:inherit; font-size:12px; font-weight:500; color:var(--fm-fg);
+  cursor:pointer; transition:background 150ms var(--ease-out),box-shadow 150ms var(--ease-out);
+}
+.preset-select:hover { background:var(--fm-glass-float); box-shadow:var(--shadow-sm); }
+.preset-select select { border:0; background:transparent; font:inherit; color:inherit; outline:none; cursor:pointer; appearance:none; -webkit-appearance:none; padding-right:14px;
+  background-image:url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%236e6e73' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONTENT
+   ════════════════════════════════════════════════════════════════════════ */
+.content {
+  flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column;
+  gap:12px; scroll-behavior:smooth; position:relative; z-index:1;
+}
+.content::-webkit-scrollbar{ width:6px; }
+.content::-webkit-scrollbar-track{ background:transparent; }
+.content::-webkit-scrollbar-thumb{ background:rgba(128,128,128,0.25); border-radius:3px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DROP ZONE v3 — Animated Glass Panel
+   ════════════════════════════════════════════════════════════════════════ */
+.drop-zone {
+  position:relative; min-height:120px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:var(--fm-r-lg);
+  background: var(--fm-glass-surface);
+  backdrop-filter:blur(var(--blur-card)) saturate(var(--saturate));
+  -webkit-backdrop-filter:blur(var(--blur-card)) saturate(var(--saturate));
+  border:1px solid var(--fm-border);
+  box-shadow: var(--shadow-edge);
+  cursor:pointer;
+  transition:
+    border-color 250ms var(--ease-out),
+    background 250ms var(--ease-out),
+    transform 250ms var(--ease-card),
+    box-shadow 250ms var(--ease-out);
+  overflow:hidden;
+}
+
+/* Ambient glow behind the icon */
+.drop-zone-glow {
+  position:absolute; width:80px; height:80px; border-radius:50%;
+  background:radial-gradient(circle, var(--fm-accent-glow) 0%, transparent 70%);
+  opacity:0.6; pointer-events:none;
+  transition: transform 2.4s ease-in-out, opacity 250ms var(--ease-out);
+  animation: ambient-glow 3s ease-in-out infinite;
+}
+@keyframes ambient-glow {
+  0%,100% { transform:scale(1); opacity:0.5; }
+  50%     { transform:scale(1.3); opacity:0.9; }
+}
+
+.drop-zone:hover {
+  border-color: var(--fm-border-strong);
+  box-shadow: var(--shadow-sm), 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+.drop-zone.drag-over {
+  border-color: var(--fm-accent);
+  border-width:2px;
+  background:rgba(0,102,204,0.04);
+  transform:scale(1.006);
+  box-shadow:
+    0 0 0 6px rgba(0,102,204,0.06),
+    0 0 30px rgba(0,102,204,0.08),
+    var(--shadow-md);
+}
+.drop-zone.drag-over .drop-zone-glow {
+  opacity:1;
+  background:radial-gradient(circle, var(--fm-accent-glow) 0%, transparent 70%);
+}
+
+.drop-zone-icon {
+  font-size:32px; margin-bottom:10px; position:relative; z-index:1;
+  color:var(--fm-muted);
+  transition: color 250ms var(--ease-out), transform 280ms var(--ease-spring);
+}
+.drop-zone.drag-over .drop-zone-icon {
+  color:var(--fm-accent); transform:scale(1.15);
+}
+
+.drop-zone-label {
+  font-family:var(--fm-display); font-size:15px; font-weight:500;
+  color:var(--fm-fg-2); position:relative; z-index:1;
+  transition:color 250ms var(--ease-out);
+}
+.drop-zone.drag-over .drop-zone-label { color:var(--fm-accent); }
+
+.drop-zone-sublabel {
+  font-size:12px; color:var(--fm-muted); margin-top:3px; position:relative; z-index:1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   JOB CARD v3 — Tier 2 Glass, Hover Elevation
+   ════════════════════════════════════════════════════════════════════════ */
+.job-card {
+  background: var(--fm-glass-surface);
+  backdrop-filter:blur(var(--blur-card)) saturate(var(--saturate));
+  -webkit-backdrop-filter:blur(var(--blur-card)) saturate(var(--saturate));
+  border-radius:var(--fm-r);
+  border:0.5px solid var(--fm-border);
+  box-shadow: var(--shadow-edge), var(--shadow-sm);
+  transition:
+    box-shadow 200ms var(--ease-card),
+    transform 200ms var(--ease-card),
+    background 200ms var(--ease-out);
+  overflow:hidden;
+}
+.job-card:hover {
+  background:var(--fm-glass-raised);
+  box-shadow: var(--shadow-edge), var(--shadow-md);
+  transform:translateY(-2px);
+}
+
+.job-card-inner { padding:14px 16px; }
+
+/* Header */
+.job-card-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+}
+.job-card-title {
+  font-family:var(--fm-display); font-size:14px; font-weight:600;
+  color:var(--fm-fg); letter-spacing:-0.01em;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:55%;
+}
+
+/* Phase badge */
+.phase-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 10px; border-radius:var(--fm-r-pill);
+  font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;
+  transition:background 200ms var(--ease-out), color 200ms var(--ease-out);
+}
+.phase-badge.idle       { background:rgba(110,110,115,0.08); color:var(--fm-muted); }
+.phase-badge.preparing  { background:var(--fm-accent-glow);  color:var(--fm-accent); }
+.phase-badge.running    { background:var(--fm-amber-glow);   color:var(--fm-amber); }
+.phase-badge.validating { background:var(--fm-teal-glow);    color:var(--fm-teal); }
+.phase-badge.completed  { background:rgba(26,140,92,0.08);   color:var(--fm-success); }
+.phase-badge.warnings   { background:rgba(183,121,31,0.08);  color:var(--fm-warning); }
+.phase-badge.failed     { background:var(--fm-rose-glow);    color:var(--fm-rose); }
+.phase-badge.canceled   { background:rgba(110,110,115,0.08); color:var(--fm-muted); }
+.phase-badge.paused     { background:var(--fm-amber-glow);   color:var(--fm-amber); }
+
+.phase-badge.running::before {
+  content:''; width:6px; height:6px; border-radius:50%; background:var(--fm-amber);
+  animation:pulse-dot 1.4s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100%{ opacity:1; box-shadow:0 0 0 0 var(--fm-amber-glow); }
+  50%    { opacity:0.5; box-shadow:0 0 0 6px transparent; }
+}
+
+/* Progress */
+.progress-section { margin:4px 0 8px; }
+.progress-track {
+  height:5px; background:rgba(0,0,0,0.06); border-radius:3px; overflow:hidden;
+}
+.progress-fill {
+  height:100%; border-radius:3px;
+  background:linear-gradient(90deg, var(--fm-accent), var(--fm-amber));
+  transition:width 400ms var(--ease-smooth);
+  position:relative;
+}
+.progress-fill.completed { background:linear-gradient(90deg, var(--fm-accent), var(--fm-success)); }
+.progress-fill.failed-fill { background:linear-gradient(90deg, var(--fm-rose), var(--fm-rose)); }
+.progress-fill.warning-fill { background:linear-gradient(90deg, var(--fm-amber), var(--fm-warning)); }
+
+.progress-meta {
+  display:flex; align-items:center; justify-content:space-between; margin-top:5px;
+}
+.progress-label { font-size:12px; font-weight:500; color:var(--fm-fg-2); }
+.progress-confidence { font-size:11px; color:var(--fm-muted); font-family:var(--fm-mono); }
+
+/* Status rows */
+.status-row {
+  display:flex; align-items:center; gap:8px; margin:6px 0; padding:8px 12px;
+  border-radius:var(--fm-r-sm); font-size:12px; font-weight:500;
+}
+.status-row.success{ background:rgba(26,140,92,0.06); color:var(--fm-success); }
+.status-row.warning{ background:rgba(183,121,31,0.06); color:var(--fm-warning); }
+.status-row.error  { background:var(--fm-rose-glow); color:var(--fm-rose); }
+
+/* Actions */
+.job-card-actions {
+  display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:10px;
+}
+.btn {
+  display:inline-flex; align-items:center; gap:4px; padding:5px 14px;
+  border-radius:var(--fm-r-sm); font:inherit; font-size:12px; font-weight:500;
+  cursor:pointer; border:none; outline:none;
+  transition:background 150ms var(--ease-out), box-shadow 150ms var(--ease-out), transform 100ms var(--ease-out);
+  user-select:none;
+}
+.btn:active{ transform:scale(0.97); }
+
+.btn-primary {
+  background:var(--fm-accent); color:#fff;
+  box-shadow:0 1px 3px rgba(0,102,204,0.2);
+}
+.btn-primary:hover{ background:var(--fm-accent-hover); box-shadow:0 2px 8px rgba(0,102,204,0.3); }
+
+.btn-secondary {
+  background:var(--fm-glass-raised); color:var(--fm-fg);
+  border:0.5px solid var(--fm-border); box-shadow:var(--shadow-edge);
+}
+.btn-secondary:hover{ background:var(--fm-glass-float); box-shadow:var(--shadow-sm); }
+
+.btn-danger{ background:transparent; color:var(--fm-danger); }
+.btn-danger:hover{ background:var(--fm-rose-glow); }
+
+.btn-ghost{ background:transparent; color:var(--fm-fg-2); }
+.btn-ghost:hover{ background:rgba(0,0,0,0.04); color:var(--fm-fg); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EMPTY STATE
+   ════════════════════════════════════════════════════════════════════════ */
+.empty-state {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:50px 20px; text-align:center;
+}
+.empty-state-icon {
+  width:64px; height:64px; border-radius:20px;
+  background:var(--fm-glass-raised);
+  backdrop-filter:blur(var(--blur-raised));
+  -webkit-backdrop-filter:blur(var(--blur-raised));
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:24px; font-size:28px; color:var(--fm-muted);
+  box-shadow:var(--shadow-edge);
+}
+.empty-state-heading {
+  font-family:var(--fm-display); font-size:24px; font-weight:600;
+  color:var(--fm-fg); letter-spacing:-0.02em; margin-bottom:8px;
+}
+.empty-state-body {
+  font-size:14px; color:var(--fm-fg-2); max-width:360px; line-height:1.5; margin-bottom:24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DEMO BAR
+   ════════════════════════════════════════════════════════════════════════ */
+.demo-bar {
+  display:flex; align-items:center; gap:8px; padding:8px 16px;
+  border-top:0.5px solid var(--fm-border); flex-shrink:0; z-index:5;
+  background:var(--fm-glass-surface);
+  backdrop-filter:blur(var(--blur-card));
+  -webkit-backdrop-filter:blur(var(--blur-card));
+}
+.demo-bar-label {
+  font-size:10px; font-weight:600; color:var(--fm-muted);
+  text-transform:uppercase; letter-spacing:0.06em; margin-right:6px;
+}
+.demo-btn {
+  padding:4px 12px; border-radius:var(--fm-r-sm); border:0.5px solid var(--fm-border);
+  background:var(--fm-glass-raised); font:inherit; font-size:11px; font-weight:500;
+  color:var(--fm-fg-2); cursor:pointer;
+  transition:background 150ms var(--ease-out), color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), transform 100ms var(--ease-out);
+  box-shadow:var(--shadow-edge);
+}
+.demo-btn:hover{ background:var(--fm-glass-float); color:var(--fm-fg); box-shadow:var(--shadow-sm); }
+.demo-btn:active{ transform:scale(0.97); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════════════════ */
+@media(max-width:960px){ .window{ width:100%; height:100vh; border-radius:0; } .window::before,.window::after{ border-radius:0; } .stage{ padding:0; } }
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="window" id="window">
+
+  <!-- Title Bar -->
+  <div class="titlebar">
+    <div class="traffic-lights">
+      <div class="tl close" title="Close"></div>
+      <div class="tl minimize" title="Minimize"></div>
+      <div class="tl zoom" title="Zoom"></div>
+    </div>
+    <div class="titlebar-center">ForgeMedia</div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="toolbar-title">Jobs</span>
+    <div class="toolbar-spacer"></div>
+    <div class="privacy-pill">Privacy On</div>
+    <label class="preset-select">
+      Preset:
+      <select id="presetSelect">
+        <option value="convert_h264">Convert H.264</option>
+        <option value="convert_hevc">Convert HEVC</option>
+        <option value="transcribe">Transcribe</option>
+        <option value="stitch">Stitch Clips</option>
+        <option value="merge_audio">Merge Audio</option>
+      </select>
+    </label>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="jobList">
+    <!-- Drop Zone -->
+    <div class="drop-zone" id="dropZone"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="event.preventDefault();this.classList.remove('drag-over');addJob()"
+         onclick="addJob()">
+      <div class="drop-zone-glow"></div>
+      <div class="drop-zone-icon" id="dropIcon">↓</div>
+      <div class="drop-zone-label" id="dropLabel">Drop media files here</div>
+      <div class="drop-zone-sublabel">Privacy On · files stay on your Mac</div>
+    </div>
+    <div id="jobsContainer"></div>
+  </div>
+
+  <!-- Demo Bar -->
+  <div class="demo-bar">
+    <span class="demo-bar-label">Demo</span>
+    <button class="demo-btn" onclick="addJob()">+ Add Job</button>
+    <button class="demo-btn" onclick="addCompletedJob()">+ Completed</button>
+    <button class="demo-btn" onclick="addFailedJob()">+ Failed</button>
+    <button class="demo-btn" onclick="addWarningJob()">+ Warnings</button>
+    <button class="demo-btn" onclick="clearJobs()">Clear All</button>
+    <div class="toolbar-spacer"></div>
+    <span style="font-size:10px;color:var(--fm-muted);opacity:0.6;">v3 · macOS 27 Golden Gate · Glass morphism · Atmospheric depth · Toggle dark mode</span>
+  </div>
+
+</div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   FORGEMEDIA v3 — Job Lifecycle Controller
+   ════════════════════════════════════════════════════════════════════════ */
+
+const JOB_NAMES = [
+  'interview_raw_4k.mov', 'podcast_ep42.wav', 'wedding_ceremony.mp4',
+  'archival_footage_1998.avi', 'screen_recording_tutorial.mov',
+  'drone_aerial_broll.mp4', 'voice_memo_notes.m4a'
+];
+const PRESETS = {
+  convert_h264:'Convert H.264', convert_hevc:'Convert HEVC',
+  transcribe:'Transcribe', stitch:'Stitch Clips', merge_audio:'Merge Audio'
+};
+
+let jobCounter = 0;
+const cancelledJobs = new Set();
+
+function getPresetName(){ return PRESETS[document.getElementById('presetSelect').value] || 'Convert H.264'; }
+
+/* ── Card HTML ────────────────────────────────────────────────────────── */
+function cardHTML(id, title, phase, fraction, confidence, label, warnings){
+  const pc = phase==='completedWithWarnings'?'warnings':phase;
+  const showProg = ['preparing','running','validating'].includes(phase);
+  const done = ['completed','completedWithWarnings','failed','canceled'].includes(phase);
+  let pf = '';
+  if(phase==='completed'||phase==='completedWithWarnings') pf='completed';
+  else if(phase==='failed') pf='failed-fill';
+  else if(phase==='completedWithWarnings') pf='warning-fill';
+
+  let status='';
+  if(phase==='completed') status=`<div class="status-row success"><span>✓</span> Output saved · 1920×1080 · h264 · 2:01 · Checksum verified</div>`;
+  else if(phase==='completedWithWarnings') status=`<div class="status-row warning"><span>⚠</span> Complete · ${warnings||'Audio layout could not be verified. Output usable.'}</div>`;
+  else if(phase==='failed') status=`<div class="status-row error"><span>✕</span> Could not read video stream. Try a different file or switch to FFmpeg engine.</div>`;
+
+  let actions='';
+  if(['preparing','running','validating'].includes(phase)){
+    actions=`<button class="btn btn-secondary" onclick="pauseJob('${id}')">Pause</button>
+             <button class="btn btn-danger" onclick="cancelJob('${id}')">Cancel</button>`;
+  }else if(phase==='completed'||phase==='completedWithWarnings'){
+    actions=`<button class="btn btn-primary">Open Output</button>
+             <button class="btn btn-ghost">Share</button>`;
+  }else if(phase==='failed'){
+    actions=`<button class="btn btn-primary" onclick="retryJob('${id}')">Retry</button>
+             <button class="btn btn-ghost">Diagnostics</button>`;
+  }else if(phase==='canceled'){
+    actions=`<button class="btn btn-secondary" onclick="retryJob('${id}')">Resume from checkpoint</button>`;
+  }
+
+  const pw = Math.round(fraction*100);
+  return `
+  <div class="job-card-inner">
+    <div class="job-card-header">
+      <span class="job-card-title" title="${title}">${title}</span>
+      <span class="phase-badge ${pc}">${phase==='completedWithWarnings'?'WARNINGS':phase.toUpperCase()}</span>
+    </div>
+    ${showProg?`
+    <div class="progress-section">
+      <div class="progress-track"><div class="progress-fill ${pf}" style="width:${pw}%"></div></div>
+      <div class="progress-meta">
+        <span class="progress-label">${label}</span>
+        <span class="progress-confidence">${confidence}</span>
+      </div>
+    </div>`:(done?status:'')}
+    <div class="progress-meta" style="margin-top:${showProg?'2px':'8px'}">
+      <span style="font-size:11px;color:var(--fm-muted)">${getPresetName()} · Privacy On</span>
+    </div>
+    ${actions?`<div class="job-card-actions">${actions}</div>`:''}
+  </div>`;
+}
+
+/* ── Create card ──────────────────────────────────────────────────────── */
+function makeCard(id,title,phase,fraction,confidence,label,warnings){
+  const c=document.createElement('div');
+  c.className='job-card'; c.id='job-'+id;
+  c.style.opacity='0'; c.style.transform='translateY(10px) scale(0.98)';
+  c.innerHTML=cardHTML(id,title,phase,fraction,confidence,label,warnings);
+  return c;
+}
+
+/* ── Animate in ───────────────────────────────────────────────────────── */
+function animateIn(card){
+  const container=document.getElementById('jobsContainer');
+  const empty=container.querySelector('.empty-state'); if(empty)empty.remove();
+  container.insertBefore(card,container.firstChild);
+  requestAnimationFrame(()=>{
+    card.style.transition='opacity 280ms '+getComputedStyle(document.documentElement).getPropertyValue('--ease-card')+', transform 280ms '+getComputedStyle(document.documentElement).getPropertyValue('--ease-card');
+    card.style.opacity='1'; card.style.transform='translateY(0) scale(1)';
+  });
+}
+
+/* ── Add job (lifecycle sim) ──────────────────────────────────────────── */
+function addJob(){
+  jobCounter++; const id='j'+jobCounter; const title=JOB_NAMES[Math.floor(Math.random()*JOB_NAMES.length)];
+  const card=makeCard(id,title,'preparing',0,'Estimated','Checking video streams…');
+  animateIn(card);
+  simulateLifecycle(id,title);
+}
+
+function simulateLifecycle(id,title){
+  const segs=3+Math.floor(Math.random()*4);
+  setTimeout(()=>updateCard(id,title,'running',0,'Estimated','Starting job…'),800);
+  for(let i=1;i<=segs;i++){
+    const d=800+i*(600+Math.random()*600);
+    const f=i/segs;
+    setTimeout(()=>{if(cancelledJobs.has(id))return;updateCard(id,title,'running',f,'Measured','Processing segment '+i+' of '+segs+'…');},d);
+  }
+  const vd=800+(segs+1)*700;
+  setTimeout(()=>{if(cancelledJobs.has(id))return;updateCard(id,title,'validating',0.95,'Validating','Verifying output…');},vd);
+  setTimeout(()=>{if(cancelledJobs.has(id))return;updateCard(id,title,'completed',1,'Measured','Complete');},vd+600);
+}
+
+function updateCard(id,title,phase,fraction,confidence,label){
+  const card=document.getElementById('job-'+id); if(!card)return;
+  card.style.transition='opacity 120ms cubic-bezier(0.4,0,0.2,1), transform 120ms cubic-bezier(0.4,0,0.2,1)';
+  card.style.opacity='0.5'; card.style.transform='scale(0.995)';
+  setTimeout(()=>{
+    card.innerHTML=cardHTML(id,title,phase,fraction,confidence,label);
+    requestAnimationFrame(()=>{
+      card.style.transition='opacity 180ms cubic-bezier(0.25,0.46,0.45,0.94), transform 280ms cubic-bezier(0.34,1.56,0.64,1)';
+      card.style.opacity='1'; card.style.transform='scale(1)';
+    });
+  },130);
+}
+
+/* ── Preset job types ─────────────────────────────────────────────────── */
+function addCompletedJob(){ jobCounter++; const id='c'+jobCounter; animateIn(makeCard(id,JOB_NAMES[Math.floor(Math.random()*JOB_NAMES.length)],'completed',1,'Measured','Complete')); }
+function addFailedJob(){ jobCounter++; const id='f'+jobCounter; animateIn(makeCard(id,JOB_NAMES[Math.floor(Math.random()*JOB_NAMES.length)],'failed',0.32,'Measured','Stream read error')); }
+function addWarningJob(){ jobCounter++; const id='w'+jobCounter; animateIn(makeCard(id,JOB_NAMES[Math.floor(Math.random()*JOB_NAMES.length)],'completedWithWarnings',1,'Measured','Complete','Audio layout could not be verified.')); }
+
+function cancelJob(id){ cancelledJobs.add(id); updateCard(id,'','canceled',0.5,'Measured','Canceled by user'); }
+function pauseJob(id){ updateCard(id,'','paused',0.45,'Measured','Paused · resume when ready'); }
+function retryJob(id){ cancelledJobs.delete(id); const t=JOB_NAMES[Math.floor(Math.random()*JOB_NAMES.length)]; updateCard(id,t,'preparing',0,'Estimated','Retrying…'); simulateLifecycle(id,t); }
+
+function clearJobs(){
+  cancelledJobs.clear();
+  document.querySelectorAll('.job-card').forEach((c,i)=>{
+    c.style.transition='opacity 150ms cubic-bezier(0.4,0,0.2,1), transform 150ms cubic-bezier(0.4,0,0.2,1)';
+    c.style.opacity='0'; c.style.transform='translateY(-8px) scale(0.97)';
+  });
+  setTimeout(()=>{
+    document.getElementById('jobsContainer').innerHTML='';
+    document.getElementById('jobsContainer').innerHTML=`
+    <div class="empty-state">
+      <div class="empty-state-icon">↓</div>
+      <div class="empty-state-heading">Drop media to begin</div>
+      <div class="empty-state-body">Drag video, audio, or image files into the window. ForgeMedia processes everything locally — no cloud uploads, no telemetry.</div>
+    </div>`;
+  },160);
+}
+</script>
+</body>
+</html>
