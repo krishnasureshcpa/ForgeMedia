@@ -18,9 +18,9 @@ build-history/
 graphify-out/
 echo
 
-# Large binaries — exclude app bundle and DMG (too large for git)
-ForgeMedia.app/
-ForgeMedia.dmg
+# Large binaries (uncomment to exclude)
+# ForgeMedia.app/
+# ForgeMedia.dmg
 VideoSmith/
 
 # Spec-kit artifacts (local planning docs)
