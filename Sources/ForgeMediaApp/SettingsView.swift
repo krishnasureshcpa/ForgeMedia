@@ -179,19 +179,15 @@ struct SettingsView: View {
 
             settingsRow(title: "Default preset",
                         subtitle: "Applied to new jobs unless changed in the toolbar") {
-                let presetNames: [(id: String, name: String)] = [
-                    ("convert_h264", "Convert H.264"),
-                    ("convert_hevc", "Convert HEVC"),
-                    ("transcribe",   "Transcribe"),
-                    ("dub_translate_en", "Dub + Lip-Sync"),
-                ]
                 Menu {
-                    ForEach(presetNames, id: \.id) { p in
-                        Button(p.name) { defaultPreset = p.id }
+                    ForEach(PresetMeta.all) { meta in
+                        Button { defaultPreset = meta.id } label: {
+                            Label(meta.name, systemImage: meta.icon)
+                        }
                     }
                 } label: {
                     HStack(spacing: 5) {
-                        Text(presetNames.first { $0.id == defaultPreset }?.name ?? "Select")
+                        Text(PresetMeta.find(id: defaultPreset)?.name ?? "Select")
                             .font(.system(size: 11))
                             .foregroundColor(ForgeMediaTokens.Colors.heading)
                             .lineLimit(1)

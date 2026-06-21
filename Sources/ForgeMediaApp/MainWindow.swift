@@ -16,7 +16,6 @@ struct MainWindow: View {
     @State private var isDragTargeted = false
     @State private var selectedPreset: String = "convert_h264"
     @State private var showSettings = false
-    @State private var showPresetDrop = false
 
     init(model: AppModel) {
         self.model = model
@@ -136,90 +135,16 @@ struct MainWindow: View {
         .background(ForgeMediaTokens.Colors.menuBar)
     }
 
-    // MARK: - Action Strip (32px)
+    // MARK: - Action Strip
 
     private var actionStrip: some View {
         HStack(spacing: 8) {
-            // Preset picker
-            ZStack(alignment: .topLeading) {
-                Button {
-                    withAnimation(ForgeMediaTokens.Motion.snap) { showPresetDrop.toggle() }
-                } label: {
-                    HStack(spacing: 5) {
-                        Text(currentPresetName.uppercased())
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(ForgeMediaTokens.Colors.heading)
-                            .lineLimit(1)
-                        Spacer(minLength: 4)
-                        Image(systemName: showPresetDrop ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 8, weight: .medium))
-                            .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
-                    }
-                    .padding(.horizontal, 10)
-                    .frame(width: 170, height: 28)
-                    .background(ForgeMediaTokens.Colors.canvas)
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 3)
-                            .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-
-                if showPresetDrop {
-                    VStack(spacing: 0) {
-                        ForEach(Array(model.presets.enumerated()), id: \.element.id) { idx, p in
-                            Button {
-                                withAnimation(ForgeMediaTokens.Motion.snap) {
-                                    selectedPreset = p.id
-                                    showPresetDrop = false
-                                }
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 9))
-                                        .opacity(p.id == selectedPreset ? 1 : 0)
-                                        .foregroundColor(ForgeMediaTokens.Colors.brand)
-                                    Text(p.name)
-                                        .font(.system(size: 11))
-                                        .foregroundColor(ForgeMediaTokens.Colors.heading)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .background(
-                                    p.id == selectedPreset
-                                    ? ForgeMediaTokens.Colors.brandSofter
-                                    : ForgeMediaTokens.Colors.canvas
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            if idx < model.presets.count - 1 {
-                                Divider().overlay(ForgeMediaTokens.Colors.borderSubtle)
-                            }
-                        }
-                    }
-                    .frame(width: 210)
-                    .background(ForgeMediaTokens.Colors.canvas)
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 3)
-                            .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
-                    )
-                    .shadow(
-                        color: ForgeMediaTokens.Shadow.menu.color,
-                        radius: ForgeMediaTokens.Shadow.menu.radius,
-                        x: 0, y: ForgeMediaTokens.Shadow.menu.y
-                    )
-                    .offset(y: 32)
-                    .zIndex(100)
-                }
-            }
-            .frame(width: 170, height: 28, alignment: .topLeading)
+            // Preset picker — popover-based, never clips
+            PresetPickerButton(selectedPresetID: $selectedPreset, presets: model.presets)
 
             Rectangle()
                 .fill(ForgeMediaTokens.Colors.borderSubtle)
-                .frame(width: 1, height: 16)
+                .frame(width: 1, height: 20)
 
             Button("Select Video") { pickSingleVideo() }
                 .buttonStyle(ForgeButtonStyle(.outline))
@@ -239,7 +164,7 @@ struct MainWindow: View {
             Spacer()
         }
         .padding(.horizontal, 12)
-        .frame(height: 46)
+        .padding(.vertical, 8)
         .background(ForgeMediaTokens.Colors.canvas)
     }
 
@@ -377,10 +302,6 @@ struct MainWindow: View {
     }
 
     // MARK: - Helpers
-
-    private var currentPresetName: String {
-        model.presets.first { $0.id == selectedPreset }?.name ?? "Preset"
-    }
 
     private var privacyBadge: some View {
         HStack(spacing: 4) {
