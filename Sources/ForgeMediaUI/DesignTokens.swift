@@ -1,116 +1,280 @@
 import SwiftUI
 
-// MARK: - ForgeMedia Design Tokens
+// MARK: - ForgeMedia Neo-Brutalist Design Tokens
 //
-// Apple-native light materials, restrained color, and critically damped motion
-// aligned to the ForgeMedia Open Design hyperframes.
+// Design philosophy: thick black borders · hard offset shadows (zero blur) ·
+// cream canvas · pop palette (hot red / vivid yellow / soft violet) ·
+// mechanical snap interactions · no gradients · no blur · no subtle grays.
+//
+// Every element has visual weight and structural presence.
+// If it doesn't have a border, it doesn't exist.
 
 public struct ForgeMediaTokens {
-    // MARK: Glass Tiers (Backdrop Filter Materials)
+
+    // MARK: Solid Fill Tiers
+    // Neo-brutalism forbids blur/translucency.
+    // These were Material.*; they are now flat Color values.
     public struct Glass {
-        // Base: Window background
-        public static let base = Material.ultraThinMaterial
-        // Surface: Cards, default panels
-        public static let surface = Material.thinMaterial
-        // Elevated: Hover states, active cards
-        public static let elevated = Material.regularMaterial
-        // Floating: Modals, popovers, context menus
-        public static let floating = Material.thickMaterial
+        public static let base: Color     = Colors.canvas  // aged paper background
+        public static let surface: Color  = Color.white    // card/panel fill
+        public static let elevated: Color = Color.white    // elevated panel fill
+        public static let floating: Color = Color.white    // modal/overlay fill
     }
 
     // MARK: Colors
     public struct Colors {
-        // Neutrals
-        public static let bg = Color(red: 0.961, green: 0.961, blue: 0.969)         // #f5f5f7
-        public static let fg = Color(red: 0.114, green: 0.114, blue: 0.122)          // #1d1d1f
-        public static let fgSecondary = Color(red: 0.259, green: 0.259, blue: 0.271) // #424245
-        public static let muted = Color(red: 0.431, green: 0.431, blue: 0.451)       // #6e6e73
+        // ── Canvas & Ink ──────────────────────────────────────────────────────
+        /// Aged newsprint background — softer than stark white, more authentic.
+        public static let canvas     = Color(red: 1.000, green: 0.992, blue: 0.961) // #FFFDF5
+        /// Pure structural black — ALL text, borders, shadows. No grays.
+        public static let ink        = Color.black
+        public static let white      = Color.white
 
-        // Borders
-        public static let borderSoft = Color(red: 0.910, green: 0.910, blue: 0.929).opacity(0.6)
-        public static let border = Color.black.opacity(0.08)
+        // ── Neo Pop Palette ───────────────────────────────────────────────────
+        /// Hot Red — primary CTA, important badges, active states.
+        public static let accent     = Color(red: 1.000, green: 0.420, blue: 0.420) // #FF6B6B
+        /// Vivid Yellow — secondary actions, focus states, footer background.
+        public static let secondary  = Color(red: 1.000, green: 0.851, blue: 0.239) // #FFD93D
+        /// Soft Violet — tertiary panels, subtle fills, decorative elements.
+        public static let neomuted   = Color(red: 0.769, green: 0.710, blue: 0.992) // #C4B5FD
 
-        // Accents
-        public static let accent = Color(red: 0.0, green: 0.4, blue: 0.8)            // #0066cc
-        public static let accentStrong = Color(red: 0.0, green: 0.467, blue: 0.929)  // #0077ed
-        public static let accentGlow = Color(red: 0.0, green: 0.4, blue: 0.8).opacity(0.12)
+        // ── State Signals (high-saturation, neo-appropriate) ──────────────────
+        public static let success    = Color(red: 0.161, green: 0.784, blue: 0.420) // vivid green
+        public static let warning    = Color(red: 1.000, green: 0.600, blue: 0.000) // vivid orange
+        public static let danger     = Color(red: 1.000, green: 0.420, blue: 0.420) // same as accent
+        public static let teal       = Color(red: 0.039, green: 0.745, blue: 0.706) // vivid teal
 
-        public static let warning = Color(red: 0.831, green: 0.537, blue: 0.047)     // #d4890c
-        public static let warningGlow = Color(red: 0.831, green: 0.537, blue: 0.047).opacity(0.12)
-
-        public static let teal = Color(red: 0.039, green: 0.561, blue: 0.533)        // #0a8f88
-        public static let tealGlow = Color(red: 0.039, green: 0.561, blue: 0.533).opacity(0.10)
-
-        public static let success = Color(red: 0.102, green: 0.549, blue: 0.361)     // #1a8c5c
-        public static let danger = Color(red: 0.831, green: 0.231, blue: 0.231)      // #d43b3b
-        public static let dangerGlow = Color(red: 0.831, green: 0.231, blue: 0.231).opacity(0.10)
+        // ── Legacy Aliases
+        // All existing call sites resolve through these.
+        // Mapped to neo-brutalist equivalents — no silent style regressions.
+        public static let bg            = canvas
+        public static let fg            = ink
+        public static let fgSecondary   = Color.black.opacity(0.62)
+        public static let muted         = Color.black.opacity(0.40)
+        public static let border        = Color.black
+        public static let borderSoft    = Color.black.opacity(0.22)
+        public static let accentStrong  = accent
+        /// Yellow tint — used for focused/active state backgrounds.
+        public static let accentGlow    = secondary.opacity(0.35)
+        public static let warningGlow   = warning.opacity(0.18)
+        public static let dangerGlow    = danger.opacity(0.18)
+        public static let tealGlow      = teal.opacity(0.18)
     }
 
-    // MARK: Geometry (Squircle approximation via continuous)
+    // MARK: Geometry — Sharp by default; pill only for badge/capsule elements.
     public struct Radii {
-        public static let compact: CGFloat = 8
-        public static let `default`: CGFloat = 12
-        public static let large: CGFloat = 18
-        public static let pill: CGFloat = 980 // True pill shape
+        public static let sharp: CGFloat    = 0    // neo default — hard corners
+        public static let compact: CGFloat  = 0    // was 8
+        public static let `default`: CGFloat = 0   // was 12
+        public static let large: CGFloat    = 0    // was 18
+        public static let pill: CGFloat     = 980  // capsule badges — still allowed
     }
 
-    // MARK: Motion (Critically Damped Springs & Smooth Easing)
+    // MARK: Hard Shadow Specs — zero blur, ink blocks offset bottom-right.
+    public struct ShadowSpec: Sendable {
+        public let color: Color
+        public let radius: CGFloat
+        public let x: CGFloat
+        public let y: CGFloat
+
+        public init(_ color: Color = .black, radius: CGFloat = 0, x: CGFloat, y: CGFloat) {
+            self.color = color; self.radius = radius; self.x = x; self.y = y
+        }
+    }
+
+    public struct Shadow {
+        public static let small   = ShadowSpec(x: 4,  y: 4)   // 4 × 4
+        public static let medium  = ShadowSpec(x: 6,  y: 6)   // 6 × 6
+        public static let large   = ShadowSpec(x: 8,  y: 8)   // 8 × 8
+        public static let massive = ShadowSpec(x: 12, y: 12)  // 12 × 12
+        public static let lifted  = ShadowSpec(x: 10, y: 10)  // card hover state
+    }
+
+    // MARK: Motion — Mechanical, fast, linear. No ease-in-out. No bouncing springs.
     public struct Motion {
-        // Spring for physical, tactile interactions (hover, press, drag)
-        // Mimics Apple's default spring: response 0.5, dampingFraction 0.825
-        public static let spring = Animation.spring(response: 0.35, dampingFraction: 0.7, blendDuration: 0)
-
-        // Smooth easing for opacity, color, and progress fills (no bouncing)
-        public static let smooth = Animation.timingCurve(0.4, 0.0, 0.2, 1.0, duration: 0.4)
-
-        // Fast, snappy easing for micro-interactions
-        public static let snappy = Animation.timingCurve(0.25, 0.46, 0.45, 0.94, duration: 0.15)
-
-        // Card enter/exit (slight overshoot for premium feel)
-        public static let cardEnter = Animation.timingCurve(0.05, 0.7, 0.1, 1.0, duration: 0.28)
+        /// Button press: 80ms hard snap
+        public static let snap      = Animation.linear(duration: 0.08)
+        /// Micro-interactions: 120ms linear
+        public static let snappy    = Animation.linear(duration: 0.12)
+        /// Hover & card lift: 150ms ease-out
+        public static let spring    = Animation.easeOut(duration: 0.15)
+        /// Layout / opacity shifts: 200ms ease-out
+        public static let smooth    = Animation.easeOut(duration: 0.20)
+        /// Card list entrance: 180ms ease-out
+        public static let cardEnter = Animation.easeOut(duration: 0.18)
     }
 }
 
 // MARK: - View Extensions
 
 public extension View {
-    /// Applies ForgeMedia's compact glass card style with native edge definition.
+
+    /// Neo-brutalist card: white fill · 4px black border · hard offset shadow.
+    /// Elevated (hover) state: shadow grows from 6×6 to 10×10.
     func forgeGlassCard(isElevated: Bool = false) -> some View {
-        self
-            .background(isElevated ? ForgeMediaTokens.Glass.elevated : ForgeMediaTokens.Glass.surface)
-            .clipShape(RoundedRectangle(cornerRadius: ForgeMediaTokens.Radii.default, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: ForgeMediaTokens.Radii.default, style: .continuous)
-                    .stroke(ForgeMediaTokens.Colors.border, lineWidth: 0.5)
-            )
-            .shadow(
-                color: .black.opacity(isElevated ? 0.12 : 0.06),
-                radius: isElevated ? 12 : 4,
-                x: 0,
-                y: isElevated ? 6 : 2
-            )
+        let s = isElevated ? ForgeMediaTokens.Shadow.lifted : ForgeMediaTokens.Shadow.medium
+        return self
+            .background(Color.white)
+            .clipShape(Rectangle())
+            .overlay(Rectangle().stroke(Color.black, lineWidth: 4))
+            .shadow(color: s.color, radius: s.radius, x: s.x, y: s.y)
     }
 
-    /// Applies the primary action button style with tactile press feedback.
+    /// Neo primary button: accent red fill · ink border · 4×4 hard shadow.
     func forgePrimaryButton() -> some View {
         self
-            .font(.system(.body, design: .default).weight(.medium))
-            .foregroundColor(.white)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 9)
+            .font(.system(.subheadline, design: .default).weight(.bold))
+            .foregroundColor(.black)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             .background(ForgeMediaTokens.Colors.accent)
-            .clipShape(Capsule(style: .continuous))
-            .shadow(color: ForgeMediaTokens.Colors.accent.opacity(0.3), radius: 4, x: 0, y: 2)
+            .clipShape(Rectangle())
+            .overlay(Rectangle().stroke(Color.black, lineWidth: 4))
+            .shadow(color: .black, radius: 0, x: 4, y: 4)
     }
 
-    /// Adds a subtle ambient glow effect behind the view.
-    func forgeAmbientGlow(color: Color, radius: CGFloat = 40) -> some View {
-        self.overlay(
-            Circle()
-                .fill(color)
-                .blur(radius: radius)
-                .opacity(0.6)
-                .offset(y: 4)
-        )
+    /// Applies a ShadowSpec directly as a view modifier.
+    func forgeHardShadow(_ spec: ForgeMediaTokens.ShadowSpec) -> some View {
+        shadow(color: spec.color, radius: spec.radius, x: spec.x, y: spec.y)
+    }
+
+    /// Overlays a subtle grid paper texture on any background.
+    func forgeGridTexture(cellSize: CGFloat = 28, opacity: Double = 0.07) -> some View {
+        overlay(GridPatternView(cellSize: cellSize, lineOpacity: opacity))
+    }
+
+    /// Overlays a halftone dot pattern on any background.
+    func forgeHalftoneTexture(dotSize: CGFloat = 1.5, spacing: CGFloat = 18, opacity: Double = 0.07) -> some View {
+        overlay(HalftonePatternView(dotSize: dotSize, spacing: spacing, dotOpacity: opacity))
+    }
+}
+
+// MARK: - Neo-Brutalist Button Style
+
+/// Mechanical push-down button. Translates into its own shadow on press —
+/// like a physical switch clicking down.
+public struct NeoBrutalButtonStyle: ButtonStyle {
+    public enum Variant {
+        case primary    // Hot red background
+        case secondary  // Vivid yellow background
+        case outline    // White background
+        case ghost      // Cream background
+    }
+
+    private let bgColor: Color
+    private let textColor: Color
+    private let shadowColor: Color
+
+    public init(_ variant: Variant = .outline) {
+        switch variant {
+        case .primary:
+            bgColor = ForgeMediaTokens.Colors.accent; textColor = .black; shadowColor = .black
+        case .secondary:
+            bgColor = ForgeMediaTokens.Colors.secondary; textColor = .black; shadowColor = .black
+        case .outline:
+            bgColor = .white; textColor = .black; shadowColor = .black
+        case .ghost:
+            bgColor = ForgeMediaTokens.Colors.canvas; textColor = .black; shadowColor = .black
+        }
+    }
+
+    public init(bgColor: Color, textColor: Color = .black) {
+        self.bgColor = bgColor
+        self.textColor = textColor
+        self.shadowColor = .black
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(.subheadline, design: .default).weight(.bold))
+            .foregroundColor(textColor)
+            .lineLimit(1)
+            .frame(height: 34)
+            .padding(.horizontal, 14)
+            .background(configuration.isPressed ? bgColor.opacity(0.85) : bgColor)
+            .clipShape(Rectangle())
+            .overlay(Rectangle().stroke(Color.black, lineWidth: 4))
+            // Push-down effect: translates to cover its own shadow
+            .offset(x: configuration.isPressed ? 3 : 0,
+                    y: configuration.isPressed ? 3 : 0)
+            .shadow(
+                color: shadowColor, radius: 0,
+                x: configuration.isPressed ? 0 : 4,
+                y: configuration.isPressed ? 0 : 4
+            )
+            .animation(.linear(duration: 0.08), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Texture Background Views
+
+/// Draws a repeating grid of light lines — graph-paper texture.
+/// Used via `.forgeGridTexture()` or directly in a ZStack background.
+public struct GridPatternView: View {
+    let cellSize: CGFloat
+    let lineOpacity: Double
+
+    public init(cellSize: CGFloat = 28, lineOpacity: Double = 0.07) {
+        self.cellSize = cellSize
+        self.lineOpacity = lineOpacity
+    }
+
+    public var body: some View {
+        Canvas { context, size in
+            let shading = GraphicsContext.Shading.color(.black.opacity(lineOpacity))
+            var x: CGFloat = 0
+            while x <= size.width {
+                var p = Path()
+                p.move(to: CGPoint(x: x, y: 0))
+                p.addLine(to: CGPoint(x: x, y: size.height))
+                context.stroke(p, with: shading, lineWidth: 0.5)
+                x += cellSize
+            }
+            var y: CGFloat = 0
+            while y <= size.height {
+                var p = Path()
+                p.move(to: CGPoint(x: 0, y: y))
+                p.addLine(to: CGPoint(x: size.width, y: y))
+                context.stroke(p, with: shading, lineWidth: 0.5)
+                y += cellSize
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// Draws a regular grid of filled dots — halftone texture.
+/// Used via `.forgeHalftoneTexture()` or directly in a ZStack background.
+public struct HalftonePatternView: View {
+    let dotSize: CGFloat
+    let spacing: CGFloat
+    let dotOpacity: Double
+
+    public init(dotSize: CGFloat = 1.5, spacing: CGFloat = 18, dotOpacity: Double = 0.07) {
+        self.dotSize = dotSize
+        self.spacing = spacing
+        self.dotOpacity = dotOpacity
+    }
+
+    public var body: some View {
+        Canvas { context, size in
+            let shading = GraphicsContext.Shading.color(.black.opacity(dotOpacity))
+            var row: CGFloat = spacing / 2
+            while row < size.height {
+                var col: CGFloat = spacing / 2
+                while col < size.width {
+                    context.fill(
+                        Path(ellipseIn: CGRect(
+                            x: col - dotSize / 2, y: row - dotSize / 2,
+                            width: dotSize, height: dotSize
+                        )),
+                        with: shading
+                    )
+                    col += spacing
+                }
+                row += spacing
+            }
+        }
+        .allowsHitTesting(false)
     }
 }

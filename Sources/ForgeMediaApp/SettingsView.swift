@@ -33,43 +33,69 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // ── Neo header ────────────────────────────────────────────────────
             HStack(spacing: 10) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(ForgeMediaTokens.Colors.accent)
+                // Bordered icon sticker
+                ZStack {
+                    Rectangle()
+                        .fill(ForgeMediaTokens.Colors.neomuted)
+                        .frame(width: 40, height: 40)
+                        .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
+                        .shadow(color: .black, radius: 0, x: 3, y: 3)
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 16, weight: .black))
+                        .foregroundColor(.black)
+                }
+
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("ForgeMedia Settings")
-                        .font(.system(size: 15).weight(.semibold))
-                        .foregroundColor(ForgeMediaTokens.Colors.fg)
-                    Text("Local processing defaults, privacy gates, and engine paths")
-                        .font(.system(size: 11))
-                        .foregroundColor(ForgeMediaTokens.Colors.muted)
+                    Text("SETTINGS")
+                        .font(.system(size: 16, weight: .black))
+                        .tracking(2)
+                        .foregroundColor(.black)
+                    Text("Processing defaults · Privacy gates · Engine paths")
+                        .font(.system(size: 10).weight(.bold))
+                        .foregroundColor(.black.opacity(0.50))
                 }
                 Spacer()
             }
-            .padding(18)
+            .padding(16)
 
-            Divider().opacity(0.55)
+            // Heavy rule separator
+            Rectangle()
+                .fill(Color.black)
+                .frame(height: 3)
 
-            HStack(spacing: 8) {
+            // ── Neo tab bar ───────────────────────────────────────────────────
+            HStack(spacing: 6) {
                 ForEach(SettingsTab.allCases) { tab in
                     Button {
                         withAnimation(ForgeMediaTokens.Motion.snappy) {
                             selectedTab = tab
                         }
                     } label: {
-                        Label(tab.rawValue, systemImage: tab.icon)
-                            .font(.system(size: 12).weight(.medium))
-                            .frame(maxWidth: .infinity)
+                        HStack(spacing: 5) {
+                            Image(systemName: tab.icon)
+                                .font(.system(size: 11, weight: .black))
+                            Text(tab.rawValue.uppercased())
+                                .font(.system(size: 10, weight: .black))
+                                .tracking(1.5)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 32)
                     }
                     .buttonStyle(.plain)
-                    .padding(.vertical, 8)
-                    .foregroundColor(selectedTab == tab ? ForgeMediaTokens.Colors.accent : ForgeMediaTokens.Colors.fgSecondary)
-                    .background(selectedTab == tab ? ForgeMediaTokens.Colors.accentGlow : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .foregroundColor(.black)
+                    .background(selectedTab == tab ? ForgeMediaTokens.Colors.secondary : Color.clear)
+                    .clipShape(Rectangle())
+                    .overlay(Rectangle().stroke(Color.black, lineWidth: selectedTab == tab ? 3 : 2))
+                    .shadow(color: .black, radius: 0,
+                            x: selectedTab == tab ? 3 : 0,
+                            y: selectedTab == tab ? 3 : 0)
+                    .animation(ForgeMediaTokens.Motion.snap, value: selectedTab)
                 }
             }
-            .padding(12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
 
             Group {
                 switch selectedTab {
@@ -81,8 +107,11 @@ struct SettingsView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 18)
         }
-        .frame(width: 560, height: 420)
-        .background(ForgeMediaTokens.Glass.floating)
+        .frame(width: 580, height: 460)
+        .background(Color.white)
+        .clipShape(Rectangle())
+        .overlay(Rectangle().stroke(Color.black, lineWidth: 4))
+        .shadow(color: .black, radius: 0, x: 8, y: 8)
     }
 
     private var generalTab: some View {
@@ -127,13 +156,15 @@ struct SettingsView: View {
 
             settingsRow(title: "Allow Remote AI (Gemini)", subtitle: "Disabled by default. Requires explicit consent per workflow.") {
                 HStack(spacing: 8) {
-                    Text("Sends audio to Google")
-                        .font(.system(size: 10, design: .monospaced).weight(.medium))
-                        .foregroundColor(ForgeMediaTokens.Colors.warning)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(ForgeMediaTokens.Colors.warningGlow)
-                        .clipShape(Capsule(style: .continuous))
+                    Text("SENDS AUDIO TO GOOGLE")
+                        .font(.system(size: 9, design: .monospaced).weight(.black))
+                        .tracking(1)
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(ForgeMediaTokens.Colors.warning)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.black, lineWidth: 2))
                     Toggle("", isOn: $enableRemoteAI)
                         .labelsHidden()
                 }
@@ -196,12 +227,13 @@ struct SettingsView: View {
     private func settingsRow<Accessory: View>(title: String, subtitle: String, @ViewBuilder accessory: () -> Accessory) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 13).weight(.medium))
-                    .foregroundColor(ForgeMediaTokens.Colors.fg)
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .black))
+                    .tracking(1)
+                    .foregroundColor(.black)
                 Text(subtitle)
-                    .font(.system(size: 11))
-                    .foregroundColor(ForgeMediaTokens.Colors.muted)
+                    .font(.system(size: 10).weight(.bold))
+                    .foregroundColor(.black.opacity(0.50))
                     .lineLimit(1)
                     .truncationMode(.middle)
             }

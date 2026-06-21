@@ -1,12 +1,15 @@
 import SwiftUI
 
-/// ForgeMedia media intake drop zone with glass material and spring hover feedback.
+/// ForgeMedia media intake drop zone — neo-brutalist styled.
+///
+/// Visual language: cream/white solid background · halftone dot texture ·
+/// thick black border that intensifies on hover · yellow fill on drag-over ·
+/// hard offset shadow · bold uppercase labels. No blur. No soft glow.
 public struct DropZoneView: View {
     @Binding public var isTargeted: Bool
     public let onDrop: ([URL]) -> Void
 
     @State private var isHovered: Bool = false
-    @State private var breathingPhase: Double = 0.0
 
     public init(isTargeted: Binding<Bool>, onDrop: @escaping ([URL]) -> Void) {
         self._isTargeted = isTargeted
@@ -15,60 +18,77 @@ public struct DropZoneView: View {
 
     public var body: some View {
         ZStack {
-            // 1. Subtle intake glow (behind the glass)
-            Circle()
-                .fill(ForgeMediaTokens.Colors.accent)
-                .blur(radius: 60)
-                .opacity(isTargeted ? 0.15 : (isHovered ? 0.08 : 0.04))
-                .scaleEffect(isTargeted ? 1.2 : (1.0 + breathingPhase * 0.1))
-                .animation(
-                    Animation.easeInOut(duration: 2.4).repeatForever(autoreverses: true),
-                    value: breathingPhase
-                )
+            // ── 1. Background fill ────────────────────────────────────────────
+            // Yellow when targeted (drag-over), cream otherwise.
+            Rectangle()
+                .fill(isTargeted ? ForgeMediaTokens.Colors.secondary : ForgeMediaTokens.Colors.canvas)
 
-            // 2. Glass Surface
-            VStack(spacing: 10) {
-                // Icon with spring morph
-                Image(systemName: isTargeted ? "film.stack.fill" : "film.stack")
-                    .font(.system(size: 32, weight: .medium))
-                    .foregroundColor(isTargeted ? ForgeMediaTokens.Colors.accent : ForgeMediaTokens.Colors.muted)
-                    .scaleEffect(isTargeted ? 1.15 : 1.0)
-                    .animation(ForgeMediaTokens.Motion.spring, value: isTargeted)
+            // Halftone dot texture overlay — always visible, adds tactile depth
+            HalftonePatternView(dotSize: 1.5, spacing: 20, dotOpacity: isTargeted ? 0.12 : 0.08)
 
-                Text(isTargeted ? "Release to import" : "Drop media files here")
-                    .font(.system(.body, design: .default).weight(.medium))
-                    .foregroundColor(isTargeted ? ForgeMediaTokens.Colors.accent : ForgeMediaTokens.Colors.fgSecondary)
-                    .animation(ForgeMediaTokens.Motion.snappy, value: isTargeted)
+            // ── 2. Content ────────────────────────────────────────────────────
+            VStack(spacing: 14) {
 
-                Text("Privacy On · files stay on your Mac")
-                    .font(.system(.caption, design: .default))
-                    .foregroundColor(ForgeMediaTokens.Colors.muted)
+                // Bordered icon square — sticker aesthetic
+                ZStack {
+                    Rectangle()
+                        .fill(isTargeted ? Color.black : Color.white)
+                        .frame(width: 54, height: 54)
+                        .overlay(Rectangle().stroke(Color.black, lineWidth: 4))
+                        .shadow(color: .black, radius: 0,
+                                x: isTargeted ? 0 : 4, y: isTargeted ? 0 : 4)
+                        .offset(x: isTargeted ? 3 : 0, y: isTargeted ? 3 : 0)
+
+                    Image(systemName: isTargeted ? "film.stack.fill" : "film.stack")
+                        .font(.system(size: 22, weight: .black))
+                        .foregroundColor(isTargeted ? .white : .black)
+                }
+                .animation(ForgeMediaTokens.Motion.snap, value: isTargeted)
+
+                // Primary label
+                Text(isTargeted ? "RELEASE TO IMPORT" : "DROP MEDIA HERE")
+                    .font(.system(size: 13, weight: .black))
+                    .tracking(2)
+                    .foregroundColor(.black)
+
+                // Privacy sub-label — styled as a sticker tag
+                HStack(spacing: 5) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 9, weight: .black))
+                    Text("PRIVACY ON · FILES STAY ON YOUR MAC")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(1.5)
+                }
+                .foregroundColor(.black)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(ForgeMediaTokens.Colors.success)
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(Color.black, lineWidth: 2))
+                .rotationEffect(.degrees(-1))
             }
             .padding(.vertical, 28)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 24)
         }
         .frame(minHeight: 130)
-        .background(ForgeMediaTokens.Glass.surface)
-        .clipShape(RoundedRectangle(cornerRadius: ForgeMediaTokens.Radii.large, style: .continuous))
+        .clipShape(Rectangle())
+        // Border intensifies on hover/targeted — snaps instantly
         .overlay(
-            RoundedRectangle(cornerRadius: ForgeMediaTokens.Radii.large, style: .continuous)
-                .stroke(
-                    isTargeted ? ForgeMediaTokens.Colors.accent : (isHovered ? ForgeMediaTokens.Colors.border : ForgeMediaTokens.Colors.borderSoft),
-                    lineWidth: isTargeted ? 2 : 1
-                )
+            Rectangle().stroke(Color.black,
+                               lineWidth: isHovered || isTargeted ? 4 : 2)
         )
+        // Hard offset shadow grows on interaction
         .shadow(
-            color: .black.opacity(isTargeted ? 0.15 : 0.06),
-            radius: isTargeted ? 16 : 6,
-            x: 0, y: isTargeted ? 8 : 2
+            color: .black, radius: 0,
+            x: isTargeted ? 8 : (isHovered ? 6 : 4),
+            y: isTargeted ? 8 : (isHovered ? 6 : 4)
         )
-        // Fluid spring scale on drag-over
-        .scaleEffect(isTargeted || isHovered ? 1.015 : 1.0)
-        .animation(ForgeMediaTokens.Motion.spring, value: isTargeted)
+        // Slight lift on hover/targeted
+        .offset(y: isTargeted ? -4 : (isHovered ? -2 : 0))
+        .animation(ForgeMediaTokens.Motion.snappy, value: isTargeted)
+        .animation(ForgeMediaTokens.Motion.snappy, value: isHovered)
         .onHover { hovering in
-            withAnimation(ForgeMediaTokens.Motion.snappy) {
-                isHovered = hovering
-            }
+            isHovered = hovering
         }
         // Native macOS drag and drop
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
@@ -78,9 +98,7 @@ public struct DropZoneView: View {
             for provider in providers {
                 group.enter()
                 _ = provider.loadObject(ofClass: URL.self) { obj, _ in
-                    if let obj {
-                        collector.append(obj)
-                    }
+                    if let obj { collector.append(obj) }
                     group.leave()
                 }
             }
@@ -92,12 +110,6 @@ public struct DropZoneView: View {
 
             return true
         }
-        .onAppear {
-            // Start the subtle breathing animation
-            withAnimation(Animation.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
-                breathingPhase = 1.0
-            }
-        }
     }
 }
 
@@ -105,18 +117,8 @@ private final class DropURLCollector: @unchecked Sendable {
     private let lock = NSLock()
     private var urls: [URL] = []
 
-    func append(_ url: URL) {
-        lock.lock()
-        urls.append(url)
-        lock.unlock()
-    }
-
-    func snapshot() -> [URL] {
-        lock.lock()
-        let value = urls
-        lock.unlock()
-        return value
-    }
+    func append(_ url: URL) { lock.lock(); urls.append(url); lock.unlock() }
+    func snapshot() -> [URL] { lock.lock(); let v = urls; lock.unlock(); return v }
 }
 
 // MARK: - Preview
@@ -124,13 +126,13 @@ private final class DropURLCollector: @unchecked Sendable {
 #if DEBUG
 struct DropZoneView_Previews: PreviewProvider {
     static var previews: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 32) {
             DropZoneView(isTargeted: .constant(false)) { _ in }
             DropZoneView(isTargeted: .constant(true)) { _ in }
         }
-        .padding()
-        .frame(width: 400)
-        .background(ForgeMediaTokens.Colors.bg)
+        .padding(32)
+        .frame(width: 480)
+        .background(ForgeMediaTokens.Colors.canvas)
     }
 }
 #endif
