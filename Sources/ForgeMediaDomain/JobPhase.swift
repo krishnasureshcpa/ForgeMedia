@@ -8,6 +8,9 @@ public enum JobPhase: String, Codable, Sendable, CaseIterable {
     case preparing
     case probing
     case planning
+    case separating   // Demucs stem separation
+    case transcribing // Whisper speech-to-text (+ translate)
+    case stabilizing  // FFmpeg deshake + denoise
     case running
     case validating
     case paused

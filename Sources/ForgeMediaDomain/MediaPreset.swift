@@ -36,11 +36,23 @@ public struct MediaPreset: Codable, Sendable, Identifiable, Equatable {
 
 public extension MediaPreset {
     static let builtIn: [MediaPreset] = [
-        .init(id: "transcribe", name: "Transcribe", engine: "whisper", outputContainer: "srt", videoCodec: nil, audioCodec: nil, subtitleBehavior: "sidecar"),
-        .init(id: "dub_translate_en", name: "Dub + Lip-Sync to English", engine: "open_dubbing", outputContainer: "mp4", videoCodec: "h264", audioCodec: "aac", subtitleBehavior: "burn"),
-        .init(id: "convert_h264", name: "Convert to H.264", engine: "avfoundation", outputContainer: "mp4", videoCodec: "h264", audioCodec: "aac"),
-        .init(id: "convert_hevc", name: "Convert to HEVC", engine: "avfoundation", outputContainer: "mp4", videoCodec: "hevc", audioCodec: "aac"),
-        .init(id: "stitch", name: "Stitch Clips", engine: "avfoundation", outputContainer: "mp4"),
-        .init(id: "merge_audio", name: "Merge Audio Tracks", engine: "avfoundation", outputContainer: "mp4", audioCodec: "aac"),
+        // ── Convert ──
+        .init(id: "convert_h264",       name: "Convert to H.264",       engine: "ffmpeg",         outputContainer: "mp4", videoCodec: "h264",              audioCodec: "aac"),
+        .init(id: "convert_hevc",       name: "Convert to HEVC",        engine: "ffmpeg",         outputContainer: "mp4", videoCodec: "hevc_videotoolbox",  audioCodec: "aac"),
+        .init(id: "stitch",             name: "Stitch Clips",           engine: "avfoundation",   outputContainer: "mp4"),
+        .init(id: "merge_audio",        name: "Merge Audio Tracks",     engine: "avfoundation",   outputContainer: "mp4", audioCodec: "aac"),
+
+        // ── Transcription / AI ──
+        .init(id: "transcribe",         name: "Transcribe",             engine: "whisper",        outputContainer: "srt",  videoCodec: nil, audioCodec: nil, subtitleBehavior: "sidecar"),
+        .init(id: "transcribe_translate",name: "Transcribe + Translate → EN", engine: "pipeline_transcribe", outputContainer: "srt", videoCodec: nil, audioCodec: nil, subtitleBehavior: "sidecar"),
+        .init(id: "dub_translate_en",   name: "Dub + Lip-Sync to English", engine: "open_dubbing", outputContainer: "mp4", videoCodec: "h264", audioCodec: "aac", subtitleBehavior: "burn"),
+
+        // ── Restoration (real pipeline) ──
+        // pipeline_clean   → stabilize + denoise via ffmpeg deshake + hqdn3d
+        // pipeline_4k      → stabilize + denoise + MetalFX upscale to 4K
+        // pipeline_realesrgan → stabilize + denoise + Real-ESRGAN per-frame ML upscale (slow)
+        .init(id: "restore_clean",      name: "Restore: Stabilize + Denoise",     engine: "pipeline_clean",       outputContainer: "mp4", videoCodec: "hevc_videotoolbox", audioCodec: "aac"),
+        .init(id: "restore_4k",         name: "Restore: Clean + Upscale 4K",      engine: "pipeline_4k",          outputContainer: "mp4", videoCodec: "hevc_videotoolbox", audioCodec: "aac"),
+        .init(id: "restore_4k_ml",      name: "Restore: Clean + Real-ESRGAN 4K",  engine: "pipeline_realesrgan",  outputContainer: "mp4", videoCodec: "hevc_videotoolbox", audioCodec: "aac"),
     ]
 }

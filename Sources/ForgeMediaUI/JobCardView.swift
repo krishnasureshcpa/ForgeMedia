@@ -1,8 +1,7 @@
 import SwiftUI
 import ForgeMediaDomain
 
-/// GeexArts Premium Job Card
-/// Features: Glass tiers, smooth gradient progress fills, tactile press feedback, cinematic phase transitions.
+/// ForgeMedia job card with glass material, compact native typography, lifecycle states, and smooth progress motion.
 public struct JobCardView: View {
     public let job: JobRecord
     public let preset: MediaPreset?
@@ -122,7 +121,7 @@ public struct JobCardView: View {
     // MARK: - Computed Properties
 
     private var isProcessing: Bool {
-        [.preparing, .running, .validating].contains(job.phase)
+        [.preparing, .running, .validating, .takingLonger].contains(job.phase)
     }
 
     private var isFinished: Bool {
@@ -131,7 +130,7 @@ public struct JobCardView: View {
 
     private var phaseBadge: some View {
         Text(badgeText)
-            .font(.system(.caption2, design: .default).weight(.heavy))
+            .font(.system(size: 10, design: .monospaced).weight(.medium))
             .foregroundColor(badgeColor)
             .padding(.horizontal, 9)
             .padding(.vertical, 3)
@@ -166,27 +165,27 @@ public struct JobCardView: View {
 
     private var badgeColor: Color {
         switch job.phase {
-        case .idle, .canceled, .probing, .planning, .takingLonger: return ForgeMediaTokens.Colors.muted
-        case .preparing: return ForgeMediaTokens.Colors.accent
-        case .running: return ForgeMediaTokens.Colors.amber
+        case .idle, .canceled, .probing, .planning: return ForgeMediaTokens.Colors.muted
+        case .preparing, .running, .separating, .transcribing, .stabilizing: return ForgeMediaTokens.Colors.accent
+        case .takingLonger: return ForgeMediaTokens.Colors.warning
         case .validating: return ForgeMediaTokens.Colors.teal
         case .completed: return ForgeMediaTokens.Colors.success
         case .completedWithWarnings, .paused: return ForgeMediaTokens.Colors.warning
-        case .failed: return ForgeMediaTokens.Colors.rose
-        case .recovered: return ForgeMediaTokens.Colors.accent
+        case .failed: return ForgeMediaTokens.Colors.danger
+        case .recovered: return ForgeMediaTokens.Colors.teal
         }
     }
 
     private var badgeBgColor: Color {
         switch job.phase {
-        case .idle, .canceled, .probing, .planning, .takingLonger: return ForgeMediaTokens.Colors.muted.opacity(0.08)
-        case .preparing: return ForgeMediaTokens.Colors.accentGlow
-        case .running: return ForgeMediaTokens.Colors.amberGlow
+        case .idle, .canceled, .probing, .planning: return ForgeMediaTokens.Colors.muted.opacity(0.08)
+        case .preparing, .running, .separating, .transcribing, .stabilizing: return ForgeMediaTokens.Colors.accentGlow
+        case .takingLonger: return ForgeMediaTokens.Colors.warningGlow
         case .validating: return ForgeMediaTokens.Colors.tealGlow
         case .completed: return ForgeMediaTokens.Colors.success.opacity(0.08)
         case .completedWithWarnings, .paused: return ForgeMediaTokens.Colors.warning.opacity(0.08)
-        case .failed: return ForgeMediaTokens.Colors.roseGlow
-        case .recovered: return ForgeMediaTokens.Colors.accentGlow
+        case .failed: return ForgeMediaTokens.Colors.dangerGlow
+        case .recovered: return ForgeMediaTokens.Colors.tealGlow
         }
     }
 
@@ -194,9 +193,11 @@ public struct JobCardView: View {
         if job.phase == .completed || job.phase == .completedWithWarnings {
             return LinearGradient(colors: [ForgeMediaTokens.Colors.accent, ForgeMediaTokens.Colors.success], startPoint: .leading, endPoint: .trailing)
         } else if job.phase == .failed {
-            return LinearGradient(colors: [ForgeMediaTokens.Colors.rose, ForgeMediaTokens.Colors.danger], startPoint: .leading, endPoint: .trailing)
+            return LinearGradient(colors: [ForgeMediaTokens.Colors.danger, ForgeMediaTokens.Colors.danger.opacity(0.72)], startPoint: .leading, endPoint: .trailing)
+        } else if job.phase == .takingLonger {
+            return LinearGradient(colors: [ForgeMediaTokens.Colors.warning, ForgeMediaTokens.Colors.accent], startPoint: .leading, endPoint: .trailing)
         } else {
-            return LinearGradient(colors: [ForgeMediaTokens.Colors.accent, ForgeMediaTokens.Colors.amber], startPoint: .leading, endPoint: .trailing)
+            return LinearGradient(colors: [ForgeMediaTokens.Colors.accent, ForgeMediaTokens.Colors.teal], startPoint: .leading, endPoint: .trailing)
         }
     }
 
@@ -250,9 +251,9 @@ public struct JobCardView: View {
         switch job.phase {
         case .completed: return ForgeMediaTokens.Colors.success
         case .completedWithWarnings: return ForgeMediaTokens.Colors.warning
-        case .failed, .canceled: return ForgeMediaTokens.Colors.rose
-        case .recovered: return ForgeMediaTokens.Colors.accent
-        case .idle, .preparing, .probing, .planning, .running, .validating, .paused, .takingLonger: return ForgeMediaTokens.Colors.muted
+        case .failed, .canceled: return ForgeMediaTokens.Colors.danger
+        case .recovered: return ForgeMediaTokens.Colors.teal
+        case .idle, .preparing, .probing, .planning, .running, .separating, .transcribing, .stabilizing, .validating, .paused, .takingLonger: return ForgeMediaTokens.Colors.muted
         }
     }
 
@@ -260,9 +261,9 @@ public struct JobCardView: View {
         switch job.phase {
         case .completed: return ForgeMediaTokens.Colors.success.opacity(0.08)
         case .completedWithWarnings: return ForgeMediaTokens.Colors.warning.opacity(0.08)
-        case .failed, .canceled: return ForgeMediaTokens.Colors.roseGlow
-        case .recovered: return ForgeMediaTokens.Colors.accentGlow
-        case .idle, .preparing, .probing, .planning, .running, .validating, .paused, .takingLonger: return ForgeMediaTokens.Colors.muted.opacity(0.05)
+        case .failed, .canceled: return ForgeMediaTokens.Colors.dangerGlow
+        case .recovered: return ForgeMediaTokens.Colors.tealGlow
+        case .idle, .preparing, .probing, .planning, .running, .separating, .transcribing, .stabilizing, .validating, .paused, .takingLonger: return ForgeMediaTokens.Colors.muted.opacity(0.05)
         }
     }
 
@@ -279,7 +280,7 @@ public struct JobCardView: View {
         case .preparing, .running, .validating:
             return [
                 ActionButtonDef(title: "Pause", action: onPause, color: ForgeMediaTokens.Colors.fg, bgColor: Color.black.opacity(0.05), borderColor: ForgeMediaTokens.Colors.border),
-                ActionButtonDef(title: "Cancel", action: onCancel, color: ForgeMediaTokens.Colors.rose, bgColor: Color.clear, borderColor: Color.clear)
+                ActionButtonDef(title: "Cancel", action: onCancel, color: ForgeMediaTokens.Colors.danger, bgColor: Color.clear, borderColor: Color.clear)
             ]
         case .completed, .completedWithWarnings:
             return [
@@ -294,6 +295,11 @@ public struct JobCardView: View {
         case .canceled:
             return [
                 ActionButtonDef(title: "Resume from checkpoint", action: onRetry, color: ForgeMediaTokens.Colors.fg, bgColor: Color.black.opacity(0.05), borderColor: ForgeMediaTokens.Colors.border)
+            ]
+        case .separating, .transcribing, .stabilizing:
+            return [
+                ActionButtonDef(title: "Pause", action: onPause, color: ForgeMediaTokens.Colors.fg, bgColor: Color.black.opacity(0.05), borderColor: ForgeMediaTokens.Colors.border),
+                ActionButtonDef(title: "Cancel", action: onCancel, color: ForgeMediaTokens.Colors.danger, bgColor: Color.clear, borderColor: Color.clear)
             ]
         case .idle, .probing, .planning, .paused, .takingLonger, .recovered:
             return []

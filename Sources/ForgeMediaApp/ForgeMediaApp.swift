@@ -34,12 +34,14 @@ struct ForgeMediaApp: App {
             ("/usr/bin/ffmpeg", "/usr/bin/ffprobe")
         ]
         for (ffmpeg, ffprobe) in candidatePairs where FileManager.default.isExecutableFile(atPath: ffmpeg) {
+            let probePath = FileManager.default.isExecutableFile(atPath: ffprobe) ? ffprobe : nil
             return CompositeProcessingEngine(
                 defaultEngine: FFmpegProcessRunner(
                     ffmpegPath: ffmpeg,
-                    ffprobePath: FileManager.default.isExecutableFile(atPath: ffprobe) ? ffprobe : nil
+                    ffprobePath: probePath
                 ),
-                openDubbingEngine: OpenDubbingBatchEngine()
+                openDubbingEngine: OpenDubbingBatchEngine(),
+                pipelineEngine: RealPipelineEngine(ffmpegPath: ffmpeg, ffprobePath: probePath)
             )
         }
         return FakeProcessingEngine()
@@ -51,7 +53,7 @@ struct ForgeMediaApp: App {
             MainWindow(model: model)
         }
         .windowResizability(.contentSize)
-        .defaultSize(width: 920, height: 580)
+        .defaultSize(width: 1180, height: 760)
         .commands {
             CommandGroup(after: .appInfo) {
                 Button("Show ForgeMedia Window") {

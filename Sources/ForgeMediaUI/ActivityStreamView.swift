@@ -35,7 +35,7 @@ public struct ActivityStreamView: View {
                                     .id(event.id)
                                     .transition(
                                         .asymmetric(
-                                            insertion: .move(edge: .top).combined(with: .opacity),
+                                            insertion: .move(edge: .bottom).combined(with: .opacity),
                                             removal: .opacity
                                         )
                                     )
@@ -109,7 +109,7 @@ public struct ActivityStreamView: View {
             Image(systemName: "waveform.path.ecg")
                 .font(.system(size: 22, weight: .light))
                 .foregroundColor(ForgeMediaTokens.Colors.muted)
-            Text("Awaiting first job")
+            Text("No activity yet")
                 .font(.system(.caption, design: .default).weight(.medium))
                 .foregroundColor(ForgeMediaTokens.Colors.muted)
             Text("Drop a video to see the activity stream")
@@ -198,14 +198,14 @@ private struct ActivityRow: View {
 
     private var phaseColor: Color {
         switch event.phase {
-        case .idle, .canceled, .probing, .planning, .takingLonger: return ForgeMediaTokens.Colors.muted
-        case .preparing: return ForgeMediaTokens.Colors.accent
-        case .running: return ForgeMediaTokens.Colors.amber
+        case .idle, .canceled, .probing, .planning: return ForgeMediaTokens.Colors.muted
+        case .preparing, .running, .separating, .transcribing, .stabilizing: return ForgeMediaTokens.Colors.accent
+        case .takingLonger: return ForgeMediaTokens.Colors.warning
         case .validating: return ForgeMediaTokens.Colors.teal
         case .completed: return ForgeMediaTokens.Colors.success
         case .completedWithWarnings, .paused: return ForgeMediaTokens.Colors.warning
-        case .failed: return ForgeMediaTokens.Colors.rose
-        case .recovered: return ForgeMediaTokens.Colors.accent
+        case .failed: return ForgeMediaTokens.Colors.danger
+        case .recovered: return ForgeMediaTokens.Colors.teal
         }
     }
 

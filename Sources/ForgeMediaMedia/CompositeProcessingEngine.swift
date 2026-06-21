@@ -5,10 +5,16 @@ import ForgeMediaDomain
 public final class CompositeProcessingEngine: ProcessingEngine, @unchecked Sendable {
     private let defaultEngine: ProcessingEngine
     private let openDubbingEngine: ProcessingEngine
+    private let pipelineEngine: ProcessingEngine?
 
-    public init(defaultEngine: ProcessingEngine, openDubbingEngine: ProcessingEngine) {
+    public init(
+        defaultEngine: ProcessingEngine,
+        openDubbingEngine: ProcessingEngine,
+        pipelineEngine: ProcessingEngine? = nil
+    ) {
         self.defaultEngine = defaultEngine
         self.openDubbingEngine = openDubbingEngine
+        self.pipelineEngine = pipelineEngine
     }
 
     public func probe(_ url: URL) async throws -> MediaProbeResult {
@@ -23,11 +29,16 @@ public final class CompositeProcessingEngine: ProcessingEngine, @unchecked Senda
         if preset.engine == "open_dubbing" {
             return try await openDubbingEngine.run(job, preset: preset, progress: progress)
         }
+        if preset.engine.hasPrefix("pipeline_") || preset.engine == "pipeline",
+           let pipeline = pipelineEngine {
+            return try await pipeline.run(job, preset: preset, progress: progress)
+        }
         return try await defaultEngine.run(job, preset: preset, progress: progress)
     }
 
     public func cancel(jobID: String) async {
         await defaultEngine.cancel(jobID: jobID)
         await openDubbingEngine.cancel(jobID: jobID)
+        await pipelineEngine?.cancel(jobID: jobID)
     }
 }
