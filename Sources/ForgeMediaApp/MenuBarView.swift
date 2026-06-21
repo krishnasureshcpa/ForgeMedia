@@ -2,10 +2,10 @@ import SwiftUI
 import ForgeMediaDomain
 import ForgeMediaUI
 
-/// Compact menu-bar status panel — neo-brutalist styled.
+/// Compact menu-bar status panel — retro macOS popup window.
 ///
-/// Visual language: white fill · 4px black border · hard shadow ·
-/// bordered logo sticker · bold uppercase labels · neo push-down buttons.
+/// 288px wide window card: cream fill · 1px taupe border · warm shadow.
+/// Title bar (menu-bar surface) · stats body · action buttons · privacy footer.
 /// Never runs media work — reads state from AppModel only.
 @MainActor
 struct MenuBarView: View {
@@ -16,186 +16,189 @@ struct MenuBarView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            panelHeader
-            heavyRule
-            activeJobsSummary
-            lastCompletedSummary
-            heavyRule
+        VStack(alignment: .leading, spacing: 0) {
+            panelTitleBar
+            Divider().overlay(ForgeMediaTokens.Colors.borderDefault)
+            statsBody
+            Divider().overlay(ForgeMediaTokens.Colors.borderDefault)
             actionButtons
-
-            // Footer privacy tag
-            HStack {
-                Spacer()
-                HStack(spacing: 4) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 8, weight: .black))
-                    Text("PRIVACY ON · LOCAL ONLY")
-                        .font(.system(size: 8, weight: .black))
-                        .tracking(1.5)
-                }
-                .foregroundColor(.black)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(ForgeMediaTokens.Colors.success)
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color.black, lineWidth: 1.5))
-                Spacer()
-            }
+            Divider().overlay(ForgeMediaTokens.Colors.borderDefault)
+            privacyFooter
         }
-        .padding(14)
         .frame(width: 288)
-        .background(Color.white)
-        .clipShape(Rectangle())
-        .overlay(Rectangle().stroke(Color.black, lineWidth: 4))
-        .shadow(color: .black, radius: 0, x: 6, y: 6)
+        .background(ForgeMediaTokens.Colors.canvas)
+        .clipShape(RoundedRectangle(cornerRadius: 3))
+        .overlay(
+            RoundedRectangle(cornerRadius: 3)
+                .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
+        )
+        .shadow(
+            color: ForgeMediaTokens.Shadow.windowLo.color,
+            radius: ForgeMediaTokens.Shadow.windowLo.radius,
+            x: 0, y: ForgeMediaTokens.Shadow.windowLo.y
+        )
+        .shadow(
+            color: ForgeMediaTokens.Shadow.windowHi.color,
+            radius: ForgeMediaTokens.Shadow.windowHi.radius,
+            x: 0, y: ForgeMediaTokens.Shadow.windowHi.y
+        )
     }
 
-    // MARK: - Sub-views
+    // MARK: - Title Bar
 
-    private var panelHeader: some View {
+    private var panelTitleBar: some View {
         HStack(spacing: 8) {
-            // Logo sticker — yellow bordered box
             HStack(spacing: 5) {
                 Image(systemName: "film.stack.fill")
-                    .font(.system(size: 11, weight: .black))
+                    .font(.system(size: 10, weight: .medium))
                 Text("FM")
-                    .font(.system(size: 13, weight: .black))
-                    .tracking(1)
+                    .font(.system(size: 12, weight: .semibold, design: .serif))
             }
-            .foregroundColor(.black)
-            .frame(width: 42, height: 34)
-            .background(ForgeMediaTokens.Colors.secondary)
-            .clipShape(Rectangle())
-            .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
-            .shadow(color: .black, radius: 0, x: 3, y: 3)
-            .rotationEffect(.degrees(-1))
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text("FORGEMEDIA")
-                    .font(.system(size: 12, weight: .black))
-                    .tracking(2)
-                    .foregroundColor(.black)
-                Text("Media Command Center")
-                    .font(.system(size: 10).weight(.bold))
-                    .foregroundColor(.black.opacity(0.50))
-            }
-
-            Spacer()
-            privacyIndicator
-        }
-    }
-
-    private var activeJobsSummary: some View {
-        HStack(spacing: 8) {
-            // Status dot
-            Circle()
-                .fill(model.activeJobCount > 0
-                      ? ForgeMediaTokens.Colors.accent
-                      : Color.black.opacity(0.25))
-                .frame(width: 8, height: 8)
-                .overlay(
-                    Circle().stroke(Color.black, lineWidth: 1.5)
-                )
-
-            Text(
-                model.activeJobCount == 0
-                    ? "NO JOBS RUNNING"
-                    : model.activeJobCount == 1
-                        ? "1 JOB RUNNING"
-                        : "\(model.activeJobCount) JOBS RUNNING"
+            .foregroundColor(ForgeMediaTokens.Colors.heading)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(ForgeMediaTokens.Colors.brandSofter)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(
+                RoundedRectangle(cornerRadius: 3)
+                    .stroke(ForgeMediaTokens.Colors.borderSubtle, lineWidth: 1)
             )
-            .font(.system(size: 11, weight: .black))
-            .tracking(1.5)
-            .foregroundColor(.black)
 
-            Spacer()
-        }
-    }
-
-    private var lastCompletedSummary: some View {
-        HStack(alignment: .top, spacing: 8) {
-            // Checkmark in a bordered square
-            ZStack {
-                Rectangle()
-                    .fill(ForgeMediaTokens.Colors.success.opacity(0.15))
-                    .frame(width: 22, height: 22)
-                    .overlay(Rectangle().stroke(ForgeMediaTokens.Colors.success, lineWidth: 2))
-                Image(systemName: "checkmark")
-                    .font(.system(size: 11, weight: .black))
-                    .foregroundColor(ForgeMediaTokens.Colors.success)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("FORGEMEDIA")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(ForgeMediaTokens.Colors.heading)
+                Text("Media Command Center")
+                    .font(.system(size: 9))
+                    .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(model.jobs.first(where: { $0.phase == .completed })?.title ?? "—")
-                    .font(.system(size: 11).weight(.bold))
-                    .foregroundColor(.black.opacity(0.75))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                Text(model.jobs.contains(where: { $0.phase == .completed })
-                     ? "LAST COMPLETED"
-                     : "WAITING FOR OUTPUT")
-                .font(.system(size: 9, design: .monospaced).weight(.bold))
-                .tracking(1)
-                .foregroundColor(.black.opacity(0.40))
-            }
             Spacer()
+
+            // Privacy indicator
+            HStack(spacing: 3) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 8))
+                Text("LOCAL")
+                    .font(.system(size: 8, weight: .medium, design: .monospaced))
+            }
+            .foregroundColor(ForgeMediaTokens.Colors.success)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(ForgeMediaTokens.Colors.successSoft)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(
+                RoundedRectangle(cornerRadius: 3)
+                    .stroke(ForgeMediaTokens.Colors.success.opacity(0.4), lineWidth: 1)
+            )
         }
+        .padding(.horizontal, 12)
+        .frame(height: 36)
+        .background(ForgeMediaTokens.Colors.menuBar)
     }
+
+    // MARK: - Stats Body
+
+    private var statsBody: some View {
+        VStack(spacing: 10) {
+            // Running jobs
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(model.activeJobCount > 0
+                          ? ForgeMediaTokens.Colors.brand
+                          : ForgeMediaTokens.Colors.borderSubtle)
+                    .frame(width: 7, height: 7)
+
+                Text(model.activeJobCount == 0
+                     ? "No jobs running"
+                     : model.activeJobCount == 1
+                         ? "1 job running"
+                         : "\(model.activeJobCount) jobs running")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(ForgeMediaTokens.Colors.heading)
+
+                Spacer()
+            }
+
+            // Last completed
+            HStack(alignment: .top, spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(ForgeMediaTokens.Colors.successSoft)
+                        .frame(width: 22, height: 22)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 3)
+                                .stroke(ForgeMediaTokens.Colors.success.opacity(0.4), lineWidth: 1)
+                        )
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(ForgeMediaTokens.Colors.success)
+                }
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(model.jobs.first(where: { $0.phase == .completed })?.title ?? "—")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(ForgeMediaTokens.Colors.body)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Text(model.jobs.contains(where: { $0.phase == .completed })
+                         ? "LAST COMPLETED"
+                         : "NO OUTPUT YET")
+                        .font(.system(size: 8, weight: .medium, design: .monospaced))
+                        .tracking(0.5)
+                        .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+                }
+                Spacer()
+            }
+        }
+        .padding(12)
+    }
+
+    // MARK: - Action Buttons
 
     private var actionButtons: some View {
-        VStack(spacing: 9) {
-            Button("OPEN FORGEMEDIA", action: openMainWindow)
-                .buttonStyle(NeoBrutalButtonStyle(.secondary))
+        VStack(spacing: 8) {
+            Button("Open ForgeMedia", action: openMainWindow)
+                .buttonStyle(ForgeButtonStyle(.primary))
                 .frame(maxWidth: .infinity)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 8) {
-                Button("SELECT VIDEO…", action: pickSingleVideo)
-                    .buttonStyle(NeoBrutalButtonStyle(.outline))
-                Button("SELECT FOLDER…", action: pickFolderRecursive)
-                    .buttonStyle(NeoBrutalButtonStyle(.outline))
+            HStack(spacing: 6) {
+                Button("Select Video…", action: pickSingleVideo)
+                    .buttonStyle(ForgeButtonStyle(.outline))
+                Button("Select Folder…", action: pickFolderRecursive)
+                    .buttonStyle(ForgeButtonStyle(.outline))
                 Spacer()
             }
         }
+        .padding(12)
     }
 
-    private var privacyIndicator: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 8, weight: .black))
-            Text("ON")
-                .font(.system(size: 8, weight: .black))
+    // MARK: - Privacy Footer
+
+    private var privacyFooter: some View {
+        HStack {
+            Spacer()
+            HStack(spacing: 4) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 8))
+                Text("Files stay on your Mac · no cloud uploads")
+                    .font(.system(size: 9, design: .monospaced))
+            }
+            .foregroundColor(ForgeMediaTokens.Colors.brand)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(ForgeMediaTokens.Colors.brandSofter)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(
+                RoundedRectangle(cornerRadius: 3)
+                    .stroke(ForgeMediaTokens.Colors.borderSubtle, lineWidth: 1)
+            )
+            Spacer()
         }
-        .foregroundColor(.black)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(ForgeMediaTokens.Colors.success)
-        .clipShape(Capsule())
-        .overlay(Capsule().stroke(Color.black, lineWidth: 1.5))
-    }
-
-    /// A 3px solid black rule — neo-brutalist divider.
-    private var heavyRule: some View {
-        Rectangle()
-            .fill(Color.black)
-            .frame(height: 3)
-    }
-
-    // MARK: - Progress gauge (compact circular indicator)
-
-    private func progressGauge(for job: JobRecord) -> some View {
-        ZStack {
-            Circle()
-                .stroke(Color.black.opacity(0.15), lineWidth: 2)
-            Circle()
-                .trim(from: 0, to: CGFloat(job.progressFraction))
-                .stroke(ForgeMediaTokens.Colors.accent,
-                        style: StrokeStyle(lineWidth: 2, lineCap: .butt))
-                .rotationEffect(.degrees(-90))
-                .animation(ForgeMediaTokens.Motion.smooth, value: job.progressFraction)
-        }
+        .padding(.vertical, 10)
+        .background(ForgeMediaTokens.Colors.secondarySurface)
     }
 
     // MARK: - Actions
@@ -214,10 +217,8 @@ struct MenuBarView: View {
 
     private func pickSingleVideo() {
         let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [.movie]
+        panel.canChooseFiles = true; panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false; panel.allowedContentTypes = [.movie]
         if panel.runModal() == .OK, let url = panel.url {
             model.intakeVideo(url: url)
             openMainWindow()
@@ -226,8 +227,7 @@ struct MenuBarView: View {
 
     private func pickFolderRecursive() {
         let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
+        panel.canChooseFiles = false; panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         if panel.runModal() == .OK, let url = panel.url {
             model.intakeFolder(folderURL: url, recursive: true)

@@ -3,18 +3,20 @@ import AppKit
 import ForgeMediaDomain
 import ForgeMediaUI
 
-/// Main window — neo-brutalist styled.
+/// Main window — retro macOS desktop workspace.
 ///
-/// Visual language: cream canvas with grid texture · bordered logo sticker ·
-/// heavy 3px rule dividers · neo push-down buttons · loud uppercase labels.
+/// Layout (top to bottom):
+///   36px menu-bar strip (cream/espresso · job stats · privacy · gear)
+///   32px action strip (preset picker · file-select buttons)
+///   [optional] detection banner
+///   content HStack: job queue (fluid) | 1px divider | activity stream (360px)
 @MainActor
 struct MainWindow: View {
     @State private var model: AppModel
     @State private var isDragTargeted = false
     @State private var selectedPreset: String = "convert_h264"
     @State private var showSettings = false
-    @State private var hoveredIntakeAction: String?
-    @State private var showActivityStream: Bool = true
+    @State private var showPresetDrop = false
 
     init(model: AppModel) {
         self.model = model
@@ -22,34 +24,30 @@ struct MainWindow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            toolbar
+            menuBarStrip
+            thinRule
+            actionStrip
+            thinRule
 
-            // Language detection progress banner
             if model.isDetectingLanguages {
                 detectionBanner
+                thinRule
             }
 
-            // Heavy rule separator
-            Rectangle()
-                .fill(Color.black)
-                .frame(height: 3)
-
-            NavigationSplitView(columnVisibility: .constant(.all)) {
-                // SIDEBAR: job queue / empty state
+            HStack(spacing: 0) {
                 Group {
-                    if model.jobs.isEmpty {
-                        emptyState
-                    } else {
-                        jobQueue
-                    }
+                    if model.jobs.isEmpty { emptyState } else { jobQueue }
                 }
-            } detail: {
-                // DETAIL: live activity stream (right pane)
+                .frame(maxWidth: .infinity)
+
+                Rectangle()
+                    .fill(ForgeMediaTokens.Colors.borderDefault)
+                    .frame(width: 1)
+
                 ActivityStreamView(events: model.events, jobs: model.jobs)
-                    .frame(minWidth: 320)
-                    .padding(16)
-                    .navigationSplitViewColumnWidth(min: 340, ideal: 400)
+                    .frame(width: 360)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(ForgeMediaTokens.Colors.canvas)
         .frame(minWidth: 980, minHeight: 640)
@@ -60,9 +58,7 @@ struct MainWindow: View {
                 onConfirm: { overrides, targetLanguage in
                     model.confirmLanguagesAndStart(overrides: overrides, targetLanguage: targetLanguage)
                 },
-                onCancel: {
-                    model.cancelPendingDetection()
-                }
+                onCancel: { model.cancelPendingDetection() }
             )
         }
         .sheet(isPresented: $showSettings) {
@@ -70,126 +66,201 @@ struct MainWindow: View {
         }
         .onAppear {
             model.start()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                guard let window = NSApp.windows.first(where: { !$0.canBecomeKey == false })
+                        ?? NSApp.windows.first else { return }
+                window.titlebarAppearsTransparent = true
+                window.titleVisibility = .hidden
+                window.isMovableByWindowBackground = true
+            }
         }
     }
 
-    // MARK: - Toolbar
+    // MARK: - Menu Bar Strip (36px)
 
-    private var toolbar: some View {
-        HStack(spacing: 10) {
-            // ── Logo sticker ──────────────────────────────────────────────────
-            // Yellow box with black border — the visual anchor for the toolbar.
-            HStack(spacing: 6) {
+    private var menuBarStrip: some View {
+        HStack(spacing: 8) {
+            // App logo mark
+            HStack(spacing: 5) {
                 Image(systemName: "film.stack.fill")
-                    .font(.system(size: 12, weight: .black))
-                Text("FORGEMEDIA")
-                    .font(.system(size: 12, weight: .black))
-                    .tracking(1.5)
+                    .font(.system(size: 11, weight: .semibold))
+                Text("FM")
+                    .font(.system(size: 12, weight: .semibold, design: .serif))
             }
-            .foregroundColor(.black)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(ForgeMediaTokens.Colors.secondary)
-            .clipShape(Rectangle())
-            .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
-            .shadow(color: .black, radius: 0, x: 3, y: 3)
-            .rotationEffect(.degrees(-1)) // sticker tilt
+            .foregroundColor(ForgeMediaTokens.Colors.heading)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(ForgeMediaTokens.Colors.canvas)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(
+                RoundedRectangle(cornerRadius: 3)
+                    .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
+            )
+
+            Text("FORGEMEDIA")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundColor(ForgeMediaTokens.Colors.heading)
+
+            Rectangle()
+                .fill(ForgeMediaTokens.Colors.borderSubtle)
+                .frame(width: 1, height: 14)
+
+            // Job stat chips
+            jobStatChip(
+                count: model.activeJobCount,
+                label: "RUNNING",
+                accent: model.activeJobCount > 0 ? ForgeMediaTokens.Colors.brand : nil
+            )
+            jobStatChip(
+                count: model.jobs.filter { $0.phase == .completed || $0.phase == .completedWithWarnings }.count,
+                label: "DONE",
+                accent: nil
+            )
+            let failed = model.jobs.filter { $0.phase == .failed }.count
+            if failed > 0 {
+                jobStatChip(count: failed, label: "FAILED", accent: ForgeMediaTokens.Colors.danger)
+            }
 
             Spacer()
 
-            // ── Privacy badge ─────────────────────────────────────────────────
             privacyBadge
 
-            // ── Preset picker ─────────────────────────────────────────────────
-            Picker("Preset", selection: $selectedPreset) {
-                ForEach(model.presets) { p in
-                    Text(p.name.uppercased()).tag(p.id)
-                }
-            }
-            .frame(width: 160)
-            .controlSize(.small)
-
-            // ── Intake buttons ────────────────────────────────────────────────
-            Button("SELECT VIDEO") {
-                pickSingleVideo()
-            }
-            .buttonStyle(NeoBrutalButtonStyle(.outline))
-            .keyboardShortcut("o", modifiers: [.command])
-            .help("Select one video (⌘O)")
-            .onHover { hoveredIntakeAction = $0 ? "single" : nil }
-
-            Button("SELECT VIDEOS") {
-                pickMultipleVideos()
-            }
-            .buttonStyle(NeoBrutalButtonStyle(.outline))
-            .keyboardShortcut("o", modifiers: [.command, .shift])
-            .help("Select multiple videos (⇧⌘O)")
-            .onHover { hoveredIntakeAction = $0 ? "multi" : nil }
-
-            Button("SELECT FOLDER") {
-                pickFolderRecursive()
-            }
-            .buttonStyle(NeoBrutalButtonStyle(.secondary))
-            .keyboardShortcut("f", modifiers: [.command, .shift])
-            .help("Select folder recursively (⇧⌘F)")
-            .onHover { hoveredIntakeAction = $0 ? "folder" : nil }
-
-            // ── Icon buttons ──────────────────────────────────────────────────
-            toolbarIconButton(
-                systemName: "gearshape.fill",
-                help: "Open settings (⌘,)"
-            ) {
+            iconButton(systemName: "gearshape", help: "Settings (⌘,)") {
                 showSettings.toggle()
             }
-            .keyboardShortcut(",", modifiers: [.command])
+            .keyboardShortcut(",", modifiers: .command)
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 36)
+        .background(ForgeMediaTokens.Colors.menuBar)
+    }
 
-            toolbarIconButton(
-                systemName: showActivityStream ? "sidebar.right" : "sidebar.squares.right",
-                help: "Toggle activity stream (⌘\\)"
-            ) {
-                withAnimation(ForgeMediaTokens.Motion.smooth) {
-                    showActivityStream.toggle()
+    // MARK: - Action Strip (32px)
+
+    private var actionStrip: some View {
+        HStack(spacing: 8) {
+            // Preset picker
+            ZStack(alignment: .topLeading) {
+                Button {
+                    withAnimation(ForgeMediaTokens.Motion.snap) { showPresetDrop.toggle() }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(currentPresetName.uppercased())
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(ForgeMediaTokens.Colors.heading)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        Image(systemName: showPresetDrop ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(width: 170, height: 28)
+                    .background(ForgeMediaTokens.Colors.canvas)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 3)
+                            .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                if showPresetDrop {
+                    VStack(spacing: 0) {
+                        ForEach(Array(model.presets.enumerated()), id: \.element.id) { idx, p in
+                            Button {
+                                withAnimation(ForgeMediaTokens.Motion.snap) {
+                                    selectedPreset = p.id
+                                    showPresetDrop = false
+                                }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 9))
+                                        .opacity(p.id == selectedPreset ? 1 : 0)
+                                        .foregroundColor(ForgeMediaTokens.Colors.brand)
+                                    Text(p.name)
+                                        .font(.system(size: 11))
+                                        .foregroundColor(ForgeMediaTokens.Colors.heading)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .background(
+                                    p.id == selectedPreset
+                                    ? ForgeMediaTokens.Colors.brandSofter
+                                    : ForgeMediaTokens.Colors.canvas
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            if idx < model.presets.count - 1 {
+                                Divider().overlay(ForgeMediaTokens.Colors.borderSubtle)
+                            }
+                        }
+                    }
+                    .frame(width: 210)
+                    .background(ForgeMediaTokens.Colors.canvas)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 3)
+                            .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
+                    )
+                    .shadow(
+                        color: ForgeMediaTokens.Shadow.menu.color,
+                        radius: ForgeMediaTokens.Shadow.menu.radius,
+                        x: 0, y: ForgeMediaTokens.Shadow.menu.y
+                    )
+                    .offset(y: 32)
+                    .zIndex(100)
                 }
             }
-            .keyboardShortcut("\\", modifiers: [.command])
+            .frame(width: 170, height: 28, alignment: .topLeading)
+
+            Rectangle()
+                .fill(ForgeMediaTokens.Colors.borderSubtle)
+                .frame(width: 1, height: 16)
+
+            Button("Select Video") { pickSingleVideo() }
+                .buttonStyle(ForgeButtonStyle(.outline))
+                .keyboardShortcut("o", modifiers: .command)
+                .help("Select one video (⌘O)")
+
+            Button("Select Videos") { pickMultipleVideos() }
+                .buttonStyle(ForgeButtonStyle(.outline))
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+                .help("Select multiple videos (⇧⌘O)")
+
+            Button("Select Folder") { pickFolderRecursive() }
+                .buttonStyle(ForgeButtonStyle(.secondary))
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+                .help("Select folder recursively (⇧⌘F)")
+
+            Spacer()
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(ForgeMediaTokens.Colors.canvas.forgeGridTexture(cellSize: 28, opacity: 0.05))
+        .padding(.horizontal, 12)
+        .frame(height: 46)
+        .background(ForgeMediaTokens.Colors.canvas)
     }
+
+    // MARK: - Detection Banner
 
     private var detectionBanner: some View {
         HStack(spacing: 10) {
-            // Bordered spinner label
-            HStack(spacing: 8) {
-                ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(width: 16, height: 16)
-                Text("DETECTING LANGUAGES")
-                    .font(.system(size: 11, weight: .black))
-                    .tracking(2)
-                    .foregroundColor(.black)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(ForgeMediaTokens.Colors.neomuted)
-            .clipShape(Rectangle())
-            .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
-
+            ProgressView().scaleEffect(0.7).frame(width: 14, height: 14)
+            Text("Detecting languages…")
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundColor(ForgeMediaTokens.Colors.heading)
             Text("·")
-                .font(.system(size: 12, weight: .black))
-                .foregroundColor(.black.opacity(0.40))
-
+                .foregroundColor(ForgeMediaTokens.Colors.borderDefault)
             Text("\(model.pendingURLs.count) file\(model.pendingURLs.count == 1 ? "" : "s") queued")
-                .font(.system(.caption, design: .default).weight(.bold))
-                .foregroundColor(.black.opacity(0.65))
-
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
             Spacer()
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(ForgeMediaTokens.Colors.neomuted.opacity(0.40))
-        .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+        .padding(.horizontal, 12)
+        .frame(height: 32)
+        .background(ForgeMediaTokens.Colors.warningSoft)
         .transition(.opacity.animation(ForgeMediaTokens.Motion.smooth))
     }
 
@@ -197,45 +268,66 @@ struct MainWindow: View {
 
     private var emptyState: some View {
         ZStack {
-            // Halftone dot texture — fills the empty state area
             ForgeMediaTokens.Colors.canvas
-            HalftonePatternView(dotSize: 1.5, spacing: 22, dotOpacity: 0.06)
 
-            VStack(spacing: 20) {
+            VStack(spacing: 24) {
                 DropZoneView(isTargeted: $isDragTargeted) { urls in
                     model.intakeVideos(urls: urls, presetID: selectedPreset)
                 }
-                .frame(width: 400)
+                .frame(width: 440, height: 190)
 
-                // Hint tag — rotated sticker
-                Text(intakeHintText.uppercased())
-                    .font(.system(.caption, design: .default).weight(.black))
-                    .tracking(1.5)
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
-                    .background(Color.white)
-                    .clipShape(Rectangle())
-                    .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
-                    .shadow(color: .black, radius: 0, x: 3, y: 3)
-                    .rotationEffect(.degrees(1))
-                    .animation(ForgeMediaTokens.Motion.snappy, value: intakeHintText)
+                // Keyboard shortcuts
+                HStack(spacing: 12) {
+                    shortcutHint(key: "⌘O",  label: "One video")
+                    shortcutHint(key: "⇧⌘O", label: "Multiple")
+                    shortcutHint(key: "⇧⌘F", label: "Folder")
+                }
 
-                // Demo button
+                // Status bar
+                HStack(spacing: 6) {
+                    Text("0 active workers · 0 jobs queued · LOCAL ENGINE")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+                    Text("·")
+                        .foregroundColor(ForgeMediaTokens.Colors.borderDefault)
+                    Text("/usr/bin/ffmpeg")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+                }
+
                 Button {
                     runVisualDemo()
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 11, weight: .black))
-                        Text("TRY A VISUAL DEMO")
+                        Image(systemName: "play.circle")
+                            .font(.system(size: 11))
+                        Text("Try a visual demo")
                     }
                 }
-                .buttonStyle(NeoBrutalButtonStyle(.ghost))
+                .buttonStyle(ForgeButtonStyle(.ghost))
                 .help("Seeds a synthetic job to preview the activity stream")
             }
-            .padding(32)
+            .padding(40)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private func shortcutHint(key: String, label: String) -> some View {
+        HStack(spacing: 6) {
+            Text(key)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(ForgeMediaTokens.Colors.heading)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(ForgeMediaTokens.Colors.menuBar)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
+                )
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
         }
     }
 
@@ -243,14 +335,13 @@ struct MainWindow: View {
 
     private var jobQueue: some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
-                // Compact drop zone when jobs exist
+            LazyVStack(spacing: 8) {
                 DropZoneView(isTargeted: $isDragTargeted) { urls in
                     model.intakeVideos(urls: urls, presetID: selectedPreset)
                 }
-                .frame(height: isDragTargeted ? 120 : 64)
-                .padding(.horizontal, 8)
-                .padding(.top, 12)
+                .frame(height: isDragTargeted ? 90 : 44)
+                .padding(.horizontal, 10)
+                .padding(.top, 10)
                 .animation(ForgeMediaTokens.Motion.spring, value: isDragTargeted)
 
                 ForEach(model.jobs) { job in
@@ -280,67 +371,101 @@ struct MainWindow: View {
                     )
                 }
             }
-            .padding(.bottom, 16)
+            .padding(.bottom, 14)
         }
-        .navigationSplitViewColumnWidth(min: 420, ideal: 520)
+        .background(ForgeMediaTokens.Colors.canvas)
     }
 
-    // MARK: - Sub-views
+    // MARK: - Helpers
+
+    private var currentPresetName: String {
+        model.presets.first { $0.id == selectedPreset }?.name ?? "Preset"
+    }
 
     private var privacyBadge: some View {
         HStack(spacing: 4) {
             Image(systemName: model.privacyMode == .privacyOn ? "lock.fill" : "lock.open")
-                .font(.system(size: 9, weight: .black))
-            Text(model.privacyMode == .privacyOn ? "PRIVACY ON" : "LOCAL ONLY")
-                .font(.system(size: 9, weight: .black))
-                .tracking(1)
+                .font(.system(size: 9))
+            Text(model.privacyMode == .privacyOn ? "LOCAL" : "ONLINE")
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .tracking(0.5)
         }
-        .foregroundColor(.black)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
+        .foregroundColor(
+            model.privacyMode == .privacyOn
+            ? ForgeMediaTokens.Colors.success
+            : ForgeMediaTokens.Colors.warning
+        )
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .background(
             model.privacyMode == .privacyOn
-                ? ForgeMediaTokens.Colors.success
-                : ForgeMediaTokens.Colors.warning
+            ? ForgeMediaTokens.Colors.successSoft
+            : ForgeMediaTokens.Colors.warningSoft
         )
-        .clipShape(Capsule())
-        .overlay(Capsule().stroke(Color.black, lineWidth: 2))
-        .rotationEffect(.degrees(-2)) // sticker tilt
+        .clipShape(RoundedRectangle(cornerRadius: 3))
+        .overlay(
+            RoundedRectangle(cornerRadius: 3)
+                .stroke(
+                    model.privacyMode == .privacyOn
+                    ? ForgeMediaTokens.Colors.success.opacity(0.5)
+                    : ForgeMediaTokens.Colors.warning.opacity(0.5),
+                    lineWidth: 1
+                )
+        )
     }
 
-    @ViewBuilder
-    private func toolbarIconButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {
+    private func jobStatChip(count: Int, label: String, accent: Color?) -> some View {
+        HStack(spacing: 4) {
+            if let a = accent {
+                Circle().fill(a).frame(width: 6, height: 6)
+            }
+            Text("\(count)")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundColor(ForgeMediaTokens.Colors.heading)
+            Text(label)
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .tracking(0.5)
+                .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(ForgeMediaTokens.Colors.canvas)
+        .clipShape(RoundedRectangle(cornerRadius: 3))
+        .overlay(
+            RoundedRectangle(cornerRadius: 3)
+                .stroke(ForgeMediaTokens.Colors.borderSubtle, lineWidth: 1)
+        )
+    }
+
+    private func iconButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 13, weight: .black))
-                .foregroundColor(.black)
-                .frame(width: 32, height: 32)
-                .background(Color.white)
-                .clipShape(Rectangle())
-                .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
-                .shadow(color: .black, radius: 0, x: 3, y: 3)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+                .frame(width: 28, height: 28)
+                .background(ForgeMediaTokens.Colors.canvas)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
+                )
         }
         .buttonStyle(.plain)
         .help(help)
     }
 
-    private var intakeHintText: String {
-        switch hoveredIntakeAction {
-        case "single":  return "Process one selected video"
-        case "multi":   return "Process only selected videos"
-        case "folder":  return "Process all videos in selected folder recursively"
-        default:        return "Single · multi · recursive folder modes ready"
-        }
+    private var thinRule: some View {
+        Rectangle()
+            .fill(ForgeMediaTokens.Colors.borderDefault)
+            .frame(height: 1)
     }
 
     // MARK: - File Pickers
 
     private func pickSingleVideo() {
         let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [.movie]
+        panel.canChooseFiles = true; panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false; panel.allowedContentTypes = [.movie]
         if panel.runModal() == .OK, let url = panel.url {
             model.intakeVideo(url: url, presetID: selectedPreset)
         }
@@ -348,27 +473,22 @@ struct MainWindow: View {
 
     private func pickMultipleVideos() {
         let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = true
-        panel.allowedContentTypes = [.movie]
-        if panel.runModal() == .OK {
-            model.intakeVideos(urls: panel.urls, presetID: selectedPreset)
-        }
+        panel.canChooseFiles = true; panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true; panel.allowedContentTypes = [.movie]
+        if panel.runModal() == .OK { model.intakeVideos(urls: panel.urls, presetID: selectedPreset) }
     }
 
     private func pickFolderRecursive() {
         let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
+        panel.canChooseFiles = false; panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        if panel.runModal() == .OK, let folderURL = panel.url {
-            model.intakeFolder(folderURL: folderURL, recursive: true, presetID: selectedPreset)
+        if panel.runModal() == .OK, let url = panel.url {
+            model.intakeFolder(folderURL: url, recursive: true, presetID: selectedPreset)
         }
     }
 }
 
-// MARK: - Demo seeding
+// MARK: - Demo
 
 extension MainWindow {
     func runVisualDemo() {

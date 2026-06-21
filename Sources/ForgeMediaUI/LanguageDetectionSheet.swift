@@ -3,18 +3,12 @@ import ForgeMediaDomain
 
 /// Sheet shown after file intake. Displays per-file detected source languages
 /// and lets the user correct them before processing begins.
+/// Styled with Nostalgia design tokens: cream window · 1px taupe borders.
 public struct LanguageDetectionSheet: View {
-    /// Per-file detection results keyed by URL.
     public let detectionResults: [URL: LanguageDetectionResult]
-
-    /// Called when user taps "Confirm & Process".
-    /// Passes per-URL confirmed language codes and a global target language code.
     public let onConfirm: (_ overrides: [URL: String], _ targetLanguage: String) -> Void
-
-    /// Called when user cancels; queued files are discarded.
     public let onCancel: () -> Void
 
-    // Per-file confirmed source language (initially set from detection result)
     @State private var confirmedSources: [URL: LanguageOption] = [:]
     @State private var targetLanguage: LanguageOption = LanguageOption.find(id: "en")
 
@@ -34,93 +28,122 @@ public struct LanguageDetectionSheet: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack(alignment: .center, spacing: 10) {
-                Image(systemName: "waveform.and.magnifyingglass")
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundColor(ForgeMediaTokens.Colors.accent)
+            sheetTitleBar
+            Divider().overlay(ForgeMediaTokens.Colors.borderDefault)
+            fileList
+            Divider().overlay(ForgeMediaTokens.Colors.borderDefault)
+            footerRow
+        }
+        .background(ForgeMediaTokens.Colors.canvas)
+        .frame(width: 560)
+        .clipShape(RoundedRectangle(cornerRadius: 3))
+        .overlay(
+            RoundedRectangle(cornerRadius: 3)
+                .stroke(ForgeMediaTokens.Colors.borderDefault, lineWidth: 1)
+        )
+        .shadow(
+            color: ForgeMediaTokens.Shadow.windowLo.color,
+            radius: ForgeMediaTokens.Shadow.windowLo.radius,
+            x: 0, y: ForgeMediaTokens.Shadow.windowLo.y
+        )
+        .shadow(
+            color: ForgeMediaTokens.Shadow.windowHi.color,
+            radius: ForgeMediaTokens.Shadow.windowHi.radius,
+            x: 0, y: ForgeMediaTokens.Shadow.windowHi.y
+        )
+        .onAppear { prepopulate() }
+    }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Language Detection")
-                        .font(.system(.headline, design: .default).weight(.semibold))
-                        .foregroundColor(ForgeMediaTokens.Colors.fg)
-                    Text("Review detected languages before processing begins")
-                        .font(.system(.subheadline, design: .default))
-                        .foregroundColor(ForgeMediaTokens.Colors.muted)
+    // MARK: - Title Bar
+
+    private var sheetTitleBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "waveform.and.magnifyingglass")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(ForgeMediaTokens.Colors.brand)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Language Detection")
+                    .font(.system(size: 13, weight: .semibold, design: .serif))
+                    .foregroundColor(ForgeMediaTokens.Colors.heading)
+                Text("Review detected languages before processing begins")
+                    .font(.system(size: 11))
+                    .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+            }
+
+            Spacer()
+
+            Text("\(detectionResults.count) file\(detectionResults.count == 1 ? "" : "s")")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 48)
+        .background(ForgeMediaTokens.Colors.menuBar)
+    }
+
+    // MARK: - File List
+
+    private var fileList: some View {
+        ScrollView {
+            VStack(spacing: 4) {
+                ForEach(sortedURLs, id: \.self) { url in
+                    if let result = detectionResults[url] {
+                        FileLanguageRow(
+                            url: url,
+                            result: result,
+                            confirmed: binding(for: url, fallback: result.language)
+                        )
+                    }
                 }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .frame(maxHeight: 280)
+        .background(ForgeMediaTokens.Colors.canvas)
+    }
+
+    // MARK: - Footer
+
+    private var footerRow: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "globe")
+                    .font(.system(size: 13))
+                    .foregroundColor(ForgeMediaTokens.Colors.brand)
+
+                Text("Output language")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(ForgeMediaTokens.Colors.body)
 
                 Spacer()
+
+                LanguagePickerView(selection: $targetLanguage, includeAuto: false)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
 
-            Divider()
-
-            // Per-file rows
-            ScrollView {
-                VStack(spacing: 6) {
-                    ForEach(sortedURLs, id: \.self) { url in
-                        if let result = detectionResults[url] {
-                            FileLanguageRow(
-                                url: url,
-                                result: result,
-                                confirmed: binding(for: url, fallback: result.language)
-                            )
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-            .frame(maxHeight: 320)
-
-            Divider()
-
-            // Target language + action buttons
-            VStack(spacing: 14) {
-                HStack(spacing: 12) {
-                    Image(systemName: "globe")
-                        .font(.system(size: 14))
-                        .foregroundColor(ForgeMediaTokens.Colors.accent)
-
-                    Text("Output Language")
-                        .font(.system(.callout, design: .default).weight(.medium))
-                        .foregroundColor(ForgeMediaTokens.Colors.fg)
-
-                    Spacer()
-
-                    LanguagePickerView(selection: $targetLanguage, includeAuto: false)
-                }
-                .padding(.horizontal, 20)
-
-                HStack(spacing: 10) {
-                    Button("Cancel") {
-                        onCancel()
-                    }
-                    .buttonStyle(.bordered)
+            HStack {
+                Button("Cancel") { onCancel() }
+                    .buttonStyle(ForgeButtonStyle(.outline))
                     .keyboardShortcut(.escape, modifiers: [])
 
-                    Spacer()
+                Spacer()
 
-                    Button("Confirm & Process") {
-                        var overrides: [URL: String] = [:]
-                        for url in sortedURLs {
-                            let chosen = confirmedSources[url] ?? detectionResults[url]?.language ?? .auto
-                            overrides[url] = chosen.id
-                        }
-                        onConfirm(overrides, targetLanguage.id)
+                Button("Confirm & Process") {
+                    var overrides: [URL: String] = [:]
+                    for url in sortedURLs {
+                        let chosen = confirmedSources[url] ?? detectionResults[url]?.language ?? .auto
+                        overrides[url] = chosen.id
                     }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.return, modifiers: [.command])
+                    onConfirm(overrides, targetLanguage.id)
                 }
-                .padding(.horizontal, 20)
+                .buttonStyle(ForgeButtonStyle(.primary))
+                .keyboardShortcut(.return, modifiers: .command)
             }
-            .padding(.vertical, 16)
         }
-        .background(ForgeMediaTokens.Glass.floating)
-        .frame(width: 560)
-        .onAppear { prepopulate() }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(ForgeMediaTokens.Colors.secondarySurface)
     }
 
     // MARK: - Helpers
@@ -150,23 +173,22 @@ private struct FileLanguageRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // File icon + name
             Image(systemName: "film")
-                .font(.system(size: 14))
-                .foregroundColor(ForgeMediaTokens.Colors.muted)
-                .frame(width: 20)
+                .font(.system(size: 13))
+                .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
+                .frame(width: 18)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(url.lastPathComponent)
-                    .font(.system(.callout, design: .default))
-                    .foregroundColor(ForgeMediaTokens.Colors.fg)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(ForgeMediaTokens.Colors.heading)
                     .lineLimit(1)
 
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     confidenceChip
                     Text("via \(result.source.rawValue)")
-                        .font(.system(.caption2, design: .monospaced))
-                        .foregroundColor(ForgeMediaTokens.Colors.muted)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(ForgeMediaTokens.Colors.bodySubtle)
                 }
             }
 
@@ -174,25 +196,28 @@ private struct FileLanguageRow: View {
 
             LanguagePickerView(selection: $confirmed, includeAuto: true)
 
-            // Warning dot if needs confirmation
             if result.needsUserConfirmation {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 12))
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 11))
                     .foregroundColor(ForgeMediaTokens.Colors.warning)
                     .help("Low confidence — please verify")
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(isHovered ? ForgeMediaTokens.Glass.elevated : ForgeMediaTokens.Glass.surface)
-        .clipShape(RoundedRectangle(cornerRadius: ForgeMediaTokens.Radii.compact, style: .continuous))
+        .background(
+            isHovered
+            ? ForgeMediaTokens.Colors.secondarySurface
+            : ForgeMediaTokens.Colors.canvas
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 3))
         .overlay(
-            RoundedRectangle(cornerRadius: ForgeMediaTokens.Radii.compact, style: .continuous)
+            RoundedRectangle(cornerRadius: 3)
                 .stroke(
                     result.needsUserConfirmation
-                        ? ForgeMediaTokens.Colors.warning.opacity(0.4)
-                        : ForgeMediaTokens.Colors.border,
-                    lineWidth: 0.5
+                    ? ForgeMediaTokens.Colors.warning.opacity(0.4)
+                    : ForgeMediaTokens.Colors.borderSubtle,
+                    lineWidth: 1
                 )
         )
         .animation(ForgeMediaTokens.Motion.snappy, value: isHovered)
@@ -208,11 +233,15 @@ private struct FileLanguageRow: View {
                 : ForgeMediaTokens.Colors.danger
 
         return Text("\(pct)%")
-            .font(.system(.caption2, design: .monospaced).weight(.medium))
+            .font(.system(size: 10, design: .monospaced))
             .foregroundColor(color)
             .padding(.horizontal, 5)
-            .padding(.vertical, 1)
-            .background(color.opacity(0.1))
-            .clipShape(Capsule(style: .continuous))
+            .padding(.vertical, 2)
+            .background(color.opacity(0.10))
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(
+                RoundedRectangle(cornerRadius: 3)
+                    .stroke(color.opacity(0.40), lineWidth: 1)
+            )
     }
 }
