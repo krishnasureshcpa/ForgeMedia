@@ -22,6 +22,9 @@ public struct JobRecord: Codable, Sendable, Identifiable, Equatable {
     public var confirmedSourceLanguage: String?
     /// BCP-47 target output language (default "en", used for transcription/dubbing)
     public var targetLanguage: String
+    /// Root folder URL when this job was created via folder intake; nil for single-file intake.
+    /// Used by output naming to mirror subfolder hierarchy with folder suffix applied.
+    public var intakeRootFolderURL: URL?
 
     /// The effective source language: confirmed if set, else detected, else "auto"
     public var effectiveSourceLanguage: String {
@@ -45,7 +48,8 @@ public struct JobRecord: Codable, Sendable, Identifiable, Equatable {
         cancellationRequested: Bool = false,
         detectedSourceLanguage: String? = nil,
         confirmedSourceLanguage: String? = nil,
-        targetLanguage: String = "en"
+        targetLanguage: String = "en",
+        intakeRootFolderURL: URL? = nil
     ) {
         self.id = id
         self.title = title
@@ -64,6 +68,7 @@ public struct JobRecord: Codable, Sendable, Identifiable, Equatable {
         self.detectedSourceLanguage = detectedSourceLanguage
         self.confirmedSourceLanguage = confirmedSourceLanguage
         self.targetLanguage = targetLanguage
+        self.intakeRootFolderURL = intakeRootFolderURL
     }
 
     /// Returns a new record with the given fields updated; id/createdAt are preserved.

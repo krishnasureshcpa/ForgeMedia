@@ -96,7 +96,7 @@ public final class FFmpegProcessRunner: ProcessingEngine, @unchecked Sendable {
         args.append("pipe:1")
         args.append("-nostats")
 
-        let outputPath = job.outputURL?.path ?? "/tmp/forge_media_\(job.id).mp4"
+        let outputPath = OutputNaming.resolveOutputURL(for: job, preset: preset).path
         args.append(outputPath)
 
         process.arguments = args

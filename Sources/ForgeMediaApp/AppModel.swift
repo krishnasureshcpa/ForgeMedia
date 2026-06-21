@@ -25,6 +25,8 @@ public final class AppModel {
     /// URLs waiting for language confirmation before enqueuing
     public var pendingURLs: [URL] = []
     public var pendingPresetID: String = "convert_h264"
+    /// Root folder URL when pending jobs originated from a folder intake; nil for single-file intake.
+    public var pendingRootFolderURL: URL? = nil
     public var detectionResults: [URL: LanguageDetectionResult] = [:]
     public var showLanguageSheet: Bool = false
     public var isDetectingLanguages: Bool = false
@@ -110,12 +112,13 @@ public final class AppModel {
     // MARK: - Intake (Language-Detection Gate)
 
     /// Primary intake point. Detects languages then shows confirmation sheet.
-    public func intakeVideos(urls: [URL], presetID: String = "convert_h264") {
+    public func intakeVideos(urls: [URL], presetID: String = "convert_h264", rootFolderURL: URL? = nil) {
         let videos = urls.filter { isSupportedVideo($0) }
         guard !videos.isEmpty else { return }
 
         pendingURLs = videos
         pendingPresetID = presetID
+        pendingRootFolderURL = rootFolderURL
         detectionResults = [:]
         showLanguageSheet = false
         isDetectingLanguages = true
@@ -153,7 +156,7 @@ public final class AppModel {
             }
         }
 
-        intakeVideos(urls: discovered, presetID: presetID)
+        intakeVideos(urls: discovered, presetID: presetID, rootFolderURL: folderURL)
     }
 
     /// Called by the language sheet when user confirms.
@@ -162,8 +165,10 @@ public final class AppModel {
         showLanguageSheet = false
         let urls = pendingURLs
         let presetID = pendingPresetID
+        let rootFolderURL = pendingRootFolderURL
         let rawResults = detectionResults
         pendingURLs = []
+        pendingRootFolderURL = nil
         detectionResults = [:]
 
         for url in urls where isSupportedVideo(url) {
@@ -179,7 +184,8 @@ public final class AppModel {
                 privacyMode: privacyMode,
                 detectedSourceLanguage: detected,
                 confirmedSourceLanguage: (confirmed != detected) ? confirmed : nil,
-                targetLanguage: targetLanguage
+                targetLanguage: targetLanguage,
+                intakeRootFolderURL: rootFolderURL
             )
             do {
                 try jobRepo.upsert(job)

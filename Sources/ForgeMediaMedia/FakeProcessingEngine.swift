@@ -80,7 +80,7 @@ public final class FakeProcessingEngine: ProcessingEngine, @unchecked Sendable {
         ))
         try await Task.sleep(for: .milliseconds(500))
 
-        let outputURL = job.outputURL ?? URL(fileURLWithPath: "/tmp/forge_media_output_\(job.id.prefix(8)).mp4")
+        let outputURL = OutputNaming.resolveOutputURL(for: job, preset: preset)
         let warnings: [String] = Bool.random() ? ["Audio layout could not be verified."] : []
 
         await logger.jobEvent(jobID: job.id, phase: .completed, message: "Done: \(outputURL.lastPathComponent)", fraction: 1.0)

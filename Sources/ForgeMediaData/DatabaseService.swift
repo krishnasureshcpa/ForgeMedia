@@ -116,6 +116,13 @@ public final class DatabaseService: @unchecked Sendable {
             }
         }
 
+        // v3 — Intake root folder for output naming (folder suffix mirroring)
+        migrator.registerMigration("v3_intake_root_folder") { db in
+            try db.alter(table: "jobs") { t in
+                t.add(column: "intakeRootFolderURL", .text)
+            }
+        }
+
         try migrator.migrate(writer)
     }
 }

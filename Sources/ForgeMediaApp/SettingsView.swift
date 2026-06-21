@@ -23,6 +23,8 @@ struct SettingsView: View {
     @AppStorage("enableRemoteAI") private var enableRemoteAI: Bool = false
     @AppStorage("ffmpegPath") private var ffmpegPath: String = "/opt/homebrew/bin/ffmpeg"
     @AppStorage("maxConcurrentJobs") private var maxConcurrentJobs: Int = 2
+    @AppStorage("folderSuffix") private var folderSuffix: String = "_ForgeMedia"
+    @AppStorage("fileSuffix") private var fileSuffix: String = "_ForgeMedia"
     @State private var selectedTab: SettingsTab = .general
 
     private let ffmpegCandidates = [
@@ -107,35 +109,124 @@ struct SettingsView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 18)
         }
-        .frame(width: 580, height: 460)
+        .frame(width: 580, height: 560)
         .background(Color.white)
         .clipShape(Rectangle())
         .overlay(Rectangle().stroke(Color.black, lineWidth: 4))
         .shadow(color: .black, radius: 0, x: 8, y: 8)
+        .accentColor(.black)
     }
 
     private var generalTab: some View {
         VStack(spacing: 10) {
             settingsRow(title: "Output folder", subtitle: outputDirectory.isEmpty ? "Same folder as source" : outputDirectory) {
-                Button("Choose…", action: chooseOutputDirectory)
-                    .controlSize(.small)
+                Button(action: chooseOutputDirectory) {
+                    Text("CHOOSE…")
+                        .font(.system(size: 10, weight: .black))
+                        .tracking(1)
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 10)
+                        .frame(height: 28)
+                        .background(Color.white)
+                        .clipShape(Rectangle())
+                        .overlay(Rectangle().stroke(Color.black, lineWidth: 2.5))
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                }
+                .buttonStyle(.plain)
             }
 
             settingsRow(title: "Default preset", subtitle: "Applied to new jobs unless changed in the toolbar") {
-                Picker("Default preset", selection: $defaultPreset) {
-                    Text("Convert H.264").tag("convert_h264")
-                    Text("Convert HEVC").tag("convert_hevc")
-                    Text("Transcribe").tag("transcribe")
-                    Text("Dub + Lip-Sync").tag("dub_translate_en")
+                let presetNames: [(id: String, name: String)] = [
+                    ("convert_h264", "Convert H.264"),
+                    ("convert_hevc", "Convert HEVC"),
+                    ("transcribe", "Transcribe"),
+                    ("dub_translate_en", "Dub + Lip-Sync"),
+                ]
+                Menu {
+                    ForEach(presetNames, id: \.id) { p in
+                        Button(p.name.uppercased()) { defaultPreset = p.id }
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text((presetNames.first { $0.id == defaultPreset }?.name ?? "SELECT").uppercased())
+                            .font(.system(size: 10, weight: .black))
+                            .tracking(1)
+                            .foregroundColor(.black)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .black))
+                            .foregroundColor(.black)
+                    }
+                    .padding(.horizontal, 9)
+                    .frame(width: 180, height: 28)
+                    .background(Color.white)
+                    .clipShape(Rectangle())
+                    .overlay(Rectangle().stroke(Color.black, lineWidth: 2.5))
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(width: 180)
+                .menuStyle(.borderlessButton)
+                .fixedSize()
             }
 
             settingsRow(title: "Max concurrent jobs", subtitle: "Keeps long-form processing responsive") {
-                Stepper("\(maxConcurrentJobs)", value: $maxConcurrentJobs, in: 1...4)
-                    .frame(width: 90)
+                HStack(spacing: 0) {
+                    Button { if maxConcurrentJobs > 1 { maxConcurrentJobs -= 1 } } label: {
+                        Text("−")
+                            .font(.system(size: 14, weight: .black))
+                            .foregroundColor(.black)
+                            .frame(width: 28, height: 28)
+                            .background(Color.white)
+                            .clipShape(Rectangle())
+                            .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                    }
+                    .buttonStyle(.plain)
+                    Text("\(maxConcurrentJobs)")
+                        .font(.system(size: 11, weight: .black))
+                        .foregroundColor(.black)
+                        .frame(width: 32, height: 28)
+                        .background(ForgeMediaTokens.Colors.canvas)
+                        .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                    Button { if maxConcurrentJobs < 4 { maxConcurrentJobs += 1 } } label: {
+                        Text("+")
+                            .font(.system(size: 14, weight: .black))
+                            .foregroundColor(.black)
+                            .frame(width: 28, height: 28)
+                            .background(Color.white)
+                            .clipShape(Rectangle())
+                            .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .shadow(color: .black, radius: 0, x: 2, y: 2)
+            }
+
+            // ── Output naming section header ──────────────────────────────────
+            HStack(spacing: 8) {
+                Text("OUTPUT NAMING")
+                    .font(.system(size: 9, weight: .black))
+                    .tracking(2)
+                    .foregroundColor(.black.opacity(0.40))
+                Rectangle()
+                    .fill(Color.black.opacity(0.15))
+                    .frame(height: 1)
+            }
+            .padding(.top, 4)
+
+            settingsRow(title: "Folder suffix", subtitle: "Appended to each output folder (e.g. Videos_ForgeMedia)") {
+                TextField("_ForgeMedia", text: $folderSuffix)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 11, design: .monospaced))
+                    .frame(width: 150)
+                    .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+            }
+
+            settingsRow(title: "File suffix", subtitle: "Appended to each output filename (e.g. clip_ForgeMedia.mp4)") {
+                TextField("_ForgeMedia", text: $fileSuffix)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 11, design: .monospaced))
+                    .frame(width: 150)
+                    .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
             }
         }
     }
@@ -144,7 +235,7 @@ struct SettingsView: View {
         VStack(spacing: 10) {
             privacyRow(
                 icon: "lock.shield.fill",
-                iconColor: ForgeMediaTokens.Colors.success,
+                iconColor: ForgeMediaTokens.Colors.secondary,
                 title: "Privacy On by default",
                 subtitle: "Locked on. No telemetry, cloud uploads, or remote analytics.",
                 isFixed: true
@@ -215,8 +306,8 @@ struct SettingsView: View {
             }
             Spacer()
             if isFixed {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(ForgeMediaTokens.Colors.success)
+                Image(systemName: "checkmark.square.fill")
+                    .foregroundColor(.black)
                     .font(.system(size: 14))
             }
         }

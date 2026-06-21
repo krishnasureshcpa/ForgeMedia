@@ -584,12 +584,7 @@ public final class RealPipelineEngine: ProcessingEngine, @unchecked Sendable {
     }
 
     private func resolveOutputURL(for job: JobRecord, preset: MediaPreset) -> URL {
-        if let explicit = job.outputURL { return explicit }
-        let ext = preset.outputContainer.isEmpty ? "mp4" : preset.outputContainer
-        let dir = job.sourceURL.deletingLastPathComponent()
-        var stem = job.sourceURL.lastPathComponent
-        while stem.contains(".") { stem = URL(fileURLWithPath: stem).deletingPathExtension().lastPathComponent }
-        return dir.appendingPathComponent("\(stem)_\(preset.id)").appendingPathExtension(ext)
+        OutputNaming.resolveOutputURL(for: job, preset: preset)
     }
 }
 

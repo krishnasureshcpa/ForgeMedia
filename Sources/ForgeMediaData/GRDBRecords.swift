@@ -45,7 +45,8 @@ extension JobRecord: FetchableRecord, PersistableRecord, TableRecord {
         case id, title, sourceURL, outputURL, presetID, phase, progressFraction,
              progressConfidence, progressLabel, createdAt, updatedAt, lastCheckpoint,
              privacyMode, cancellationRequested,
-             detectedSourceLanguage, confirmedSourceLanguage, targetLanguage
+             detectedSourceLanguage, confirmedSourceLanguage, targetLanguage,
+             intakeRootFolderURL
     }
 
     public init(row: Row) throws {
@@ -66,7 +67,8 @@ extension JobRecord: FetchableRecord, PersistableRecord, TableRecord {
             cancellationRequested: row[Columns.cancellationRequested],
             detectedSourceLanguage: row[Columns.detectedSourceLanguage],
             confirmedSourceLanguage: row[Columns.confirmedSourceLanguage],
-            targetLanguage: row[Columns.targetLanguage] ?? "en"
+            targetLanguage: row[Columns.targetLanguage] ?? "en",
+            intakeRootFolderURL: (row[Columns.intakeRootFolderURL] as String?).map { URL(fileURLWithPath: $0) }
         )
     }
 
@@ -88,6 +90,7 @@ extension JobRecord: FetchableRecord, PersistableRecord, TableRecord {
         container[Columns.detectedSourceLanguage] = detectedSourceLanguage
         container[Columns.confirmedSourceLanguage] = confirmedSourceLanguage
         container[Columns.targetLanguage] = targetLanguage
+        container[Columns.intakeRootFolderURL] = intakeRootFolderURL?.path
     }
 }
 
