@@ -358,7 +358,7 @@ struct MainWindow: View {
                         },
                         onOpenOutput: {
                             if let output = job.outputURL {
-                                NSWorkspace.shared.open(output)
+                                NSWorkspace.shared.activateFileViewerSelecting([output])
                             }
                         }
                     )
