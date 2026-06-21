@@ -107,6 +107,15 @@ public final class DatabaseService: @unchecked Sendable {
             }
         }
 
+        // v2 — Language detection fields on jobs table
+        migrator.registerMigration("v2_language_fields") { db in
+            try db.alter(table: "jobs") { t in
+                t.add(column: "detectedSourceLanguage", .text)
+                t.add(column: "confirmedSourceLanguage", .text)
+                t.add(column: "targetLanguage", .text).defaults(to: "en")
+            }
+        }
+
         try migrator.migrate(writer)
     }
 }

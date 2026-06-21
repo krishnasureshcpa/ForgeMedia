@@ -15,88 +15,93 @@ struct MenuBarView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Header
-            HStack {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(ForgeMediaTokens.Colors.accent.opacity(0.12))
+                    Image(systemName: "film.stack.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(ForgeMediaTokens.Colors.accent)
+                }
+                .frame(width: 28, height: 28)
+
                 Text("ForgeMedia")
-                    .font(.system(.headline).weight(.semibold))
+                    .font(.system(size: 13).weight(.semibold))
+                    .foregroundColor(ForgeMediaTokens.Colors.fg)
+
                 Spacer()
                 privacyIndicator
             }
 
             Divider()
 
-            if model.activeJobCount == 0 {
-                Text("No active jobs")
-                    .font(.system(.callout))
-                    .foregroundColor(ForgeMediaTokens.Colors.muted)
-                    .padding(.vertical, 4)
-            } else {
-                // Show first active job
-                ForEach(model.jobs.prefix(3).filter { $0.phase != .idle && $0.phase != .completed && $0.phase != .canceled && $0.phase != .failed }) { job in
-                    HStack(spacing: 8) {
-                        progressGauge(for: job)
-                            .frame(width: 20, height: 20)
+            activeJobsSummary
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(job.title)
-                                .font(.system(.callout))
-                                .lineLimit(1)
-                                .foregroundColor(ForgeMediaTokens.Colors.fg)
-                            Text(job.progressLabel)
-                                .font(.system(.caption2))
-                                .foregroundColor(ForgeMediaTokens.Colors.muted)
-                                .lineLimit(1)
-                        }
-
-                        Spacer()
-
-                        if job.phase == .running || job.phase == .preparing {
-                            Button {
-                                Task { await model.cancelJob(job) }
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(ForgeMediaTokens.Colors.danger)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
+            lastCompletedSummary
 
             Divider()
 
-            // Bottom actions
-            HStack {
-                Button("Open ForgeMedia") {
-                    model.showJobsPanel = true
-                    NSApp.activate(ignoringOtherApps: true)
-                    if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
-                        window.makeKeyAndOrderFront(nil)
-                    } else if let window = NSApp.windows.first(where: { $0.canBecomeMain }) {
-                        window.makeKeyAndOrderFront(nil)
-                    }
+            VStack(spacing: 7) {
+                Button("Open ForgeMedia", action: openMainWindow)
+                    .buttonStyle(.bordered)
+                    .frame(maxWidth: .infinity)
+
+                HStack(spacing: 8) {
+                    Button("Select Video…", action: pickSingleVideo)
+                        .buttonStyle(.borderless)
+                    Button("Select Folder…", action: pickFolderRecursive)
+                        .buttonStyle(.borderless)
+                    Spacer()
                 }
-                .buttonStyle(.borderless)
-                .font(.system(.callout))
+            }
 
-                Spacer()
+            Text("Privacy On · Local Only")
+                .font(.system(size: 11))
+                .foregroundColor(ForgeMediaTokens.Colors.muted)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+        .padding(12)
+        .frame(width: 280)
+        .background(ForgeMediaTokens.Glass.floating)
+    }
 
-                Text("\(model.activeJobCount) active")
-                    .font(.system(.caption2))
+    private var activeJobsSummary: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(model.activeJobCount > 0 ? ForgeMediaTokens.Colors.accent : ForgeMediaTokens.Colors.muted)
+                .frame(width: 7, height: 7)
+            Text(model.activeJobCount == 1 ? "1 job running" : "\(model.activeJobCount) jobs running")
+                .font(.system(size: 13).weight(.medium))
+                .foregroundColor(ForgeMediaTokens.Colors.fg)
+            Spacer()
+        }
+    }
+
+    private var lastCompletedSummary: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 13))
+                .foregroundColor(ForgeMediaTokens.Colors.success)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.jobs.first(where: { $0.phase == .completed })?.title ?? "No completed jobs yet")
+                    .font(.system(size: 12))
+                    .foregroundColor(ForgeMediaTokens.Colors.fgSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Text(model.jobs.contains(where: { $0.phase == .completed }) ? "32s ago" : "Waiting for first output")
+                    .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(ForgeMediaTokens.Colors.muted)
             }
+            Spacer()
         }
-        .padding()
-        .frame(width: 280)
     }
 
     private var privacyIndicator: some View {
         HStack(spacing: 2) {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 8))
-            Text("Local")
+            Text("Privacy On")
                 .font(.system(size: 8, design: .monospaced).weight(.medium))
         }
         .foregroundColor(ForgeMediaTokens.Colors.success)
@@ -115,6 +120,41 @@ struct MenuBarView: View {
                 .stroke(ForgeMediaTokens.Colors.accent, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(ForgeMediaTokens.Motion.smooth, value: job.progressFraction)
+        }
+    }
+
+    private func openMainWindow() {
+        model.showJobsPanel = true
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
+            window.makeKeyAndOrderFront(nil)
+        } else if let window = NSApp.windows.first(where: { $0.canBecomeMain }) {
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            NotificationCenter.default.post(name: .forgeOpenMainWindow, object: nil)
+        }
+    }
+
+    private func pickSingleVideo() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.movie]
+        if panel.runModal() == .OK, let url = panel.url {
+            model.intakeVideo(url: url)
+            openMainWindow()
+        }
+    }
+
+    private func pickFolderRecursive() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let url = panel.url {
+            model.intakeFolder(folderURL: url, recursive: true)
+            openMainWindow()
         }
     }
 }

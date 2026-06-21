@@ -7,7 +7,7 @@ let package = Package(
         .macOS(.v14)
     ],
     dependencies: [
-        .package(url: "https://github.com/groue/GRDB.swift", from: "6.29.0")
+        .package(url: "https://github.com/groue/GRDB.swift", from: "7.0.0")
     ],
     targets: [
         // ── Domain ─────────────────────────────────────────────
@@ -87,7 +87,8 @@ let package = Package(
                 "ForgeMediaDiagnostics",
                 .product(name: "GRDB", package: "GRDB.swift")
             ],
-            path: "Sources/ForgeMediaApp"
+            path: "Sources/ForgeMediaApp",
+            exclude: ["Info.plist"]
         ),
 
         // ── CLI ────────────────────────────────────────────────

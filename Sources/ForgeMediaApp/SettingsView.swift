@@ -2,12 +2,28 @@ import SwiftUI
 import ForgeMediaUI
 
 struct SettingsView: View {
+    private enum SettingsTab: String, CaseIterable, Identifiable {
+        case general = "General"
+        case privacy = "Privacy"
+        case engine = "Engine"
+
+        var id: String { rawValue }
+        var icon: String {
+            switch self {
+            case .general: return "gearshape"
+            case .privacy: return "lock.shield"
+            case .engine: return "cpu"
+            }
+        }
+    }
+
     @AppStorage("outputDirectory") private var outputDirectory: String = ""
     @AppStorage("defaultPreset") private var defaultPreset: String = "convert_h264"
     @AppStorage("enableLocalAI") private var enableLocalAI: Bool = false
     @AppStorage("enableRemoteAI") private var enableRemoteAI: Bool = false
     @AppStorage("ffmpegPath") private var ffmpegPath: String = "/opt/homebrew/bin/ffmpeg"
     @AppStorage("maxConcurrentJobs") private var maxConcurrentJobs: Int = 2
+    @State private var selectedTab: SettingsTab = .general
 
     private let ffmpegCandidates = [
         "/opt/homebrew/bin/ffmpeg",
@@ -16,151 +32,142 @@ struct SettingsView: View {
     ]
 
     var body: some View {
-        TabView {
-            generalTab
-                .tabItem { Label("General", systemImage: "gearshape") }
-            privacyTab
-                .tabItem { Label("Privacy", systemImage: "lock.shield") }
-            engineTab
-                .tabItem { Label("Engine", systemImage: "cpu") }
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(ForgeMediaTokens.Colors.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ForgeMedia Settings")
+                        .font(.system(size: 15).weight(.semibold))
+                        .foregroundColor(ForgeMediaTokens.Colors.fg)
+                    Text("Local processing defaults, privacy gates, and engine paths")
+                        .font(.system(size: 11))
+                        .foregroundColor(ForgeMediaTokens.Colors.muted)
+                }
+                Spacer()
+            }
+            .padding(18)
+
+            Divider().opacity(0.55)
+
+            HStack(spacing: 8) {
+                ForEach(SettingsTab.allCases) { tab in
+                    Button {
+                        withAnimation(ForgeMediaTokens.Motion.snappy) {
+                            selectedTab = tab
+                        }
+                    } label: {
+                        Label(tab.rawValue, systemImage: tab.icon)
+                            .font(.system(size: 12).weight(.medium))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.vertical, 8)
+                    .foregroundColor(selectedTab == tab ? ForgeMediaTokens.Colors.accent : ForgeMediaTokens.Colors.fgSecondary)
+                    .background(selectedTab == tab ? ForgeMediaTokens.Colors.accentGlow : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+            }
+            .padding(12)
+
+            Group {
+                switch selectedTab {
+                case .general: generalTab
+                case .privacy: privacyTab
+                case .engine: engineTab
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 18)
         }
-        .frame(width: 460, height: 360)
-        .background(ForgeMediaTokens.Colors.bg)
+        .frame(width: 560, height: 420)
+        .background(ForgeMediaTokens.Glass.floating)
     }
 
     private var generalTab: some View {
-        Form {
-            Section("Output") {
-                HStack {
-                    Text("Output folder")
-                        .frame(width: 120, alignment: .trailing)
-                    TextField("Same folder as source", text: $outputDirectory)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Choose…") {
-                        chooseOutputDirectory()
-                    }
+        VStack(spacing: 10) {
+            settingsRow(title: "Output folder", subtitle: outputDirectory.isEmpty ? "Same folder as source" : outputDirectory) {
+                Button("Choose…", action: chooseOutputDirectory)
                     .controlSize(.small)
-                }
+            }
 
-                HStack {
-                    Text("Default preset")
-                        .frame(width: 120, alignment: .trailing)
-                    Picker("", selection: $defaultPreset) {
-                        Text("Convert H.264").tag("convert_h264")
-                        Text("Convert H.265").tag("convert_h265")
-                        Text("Extract Audio").tag("extract_audio")
-                        Text("Add Subtitles").tag("add_subtitles")
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 180)
+            settingsRow(title: "Default preset", subtitle: "Applied to new jobs unless changed in the toolbar") {
+                Picker("Default preset", selection: $defaultPreset) {
+                    Text("Convert H.264").tag("convert_h264")
+                    Text("Convert HEVC").tag("convert_hevc")
+                    Text("Transcribe").tag("transcribe")
+                    Text("Dub + Lip-Sync").tag("dub_translate_en")
                 }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 180)
+            }
 
-                HStack {
-                    Text("Concurrent jobs")
-                        .frame(width: 120, alignment: .trailing)
-                    Picker("", selection: $maxConcurrentJobs) {
-                        Text("1").tag(1)
-                        Text("2").tag(2)
-                        Text("4").tag(4)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 120)
-                }
+            settingsRow(title: "Max concurrent jobs", subtitle: "Keeps long-form processing responsive") {
+                Stepper("\(maxConcurrentJobs)", value: $maxConcurrentJobs, in: 1...4)
+                    .frame(width: 90)
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
 
     private var privacyTab: some View {
-        Form {
-            Section("Privacy") {
-                privacyRow(
-                    icon: "lock.shield.fill",
-                    iconColor: ForgeMediaTokens.Colors.success,
-                    title: "Privacy On by default",
-                    subtitle: "No telemetry, no cloud uploads, no remote analytics",
-                    isFixed: true
-                )
-                privacyRow(
-                    icon: "network.slash",
-                    iconColor: ForgeMediaTokens.Colors.success,
-                    title: "Remote crash reports disabled",
-                    subtitle: "Diagnostics stay on your Mac",
-                    isFixed: true
-                )
+        VStack(spacing: 10) {
+            privacyRow(
+                icon: "lock.shield.fill",
+                iconColor: ForgeMediaTokens.Colors.success,
+                title: "Privacy On by default",
+                subtitle: "Locked on. No telemetry, cloud uploads, or remote analytics.",
+                isFixed: true
+            )
+            settingsRow(title: "Allow Local AI (Whisper)", subtitle: "Runs entirely on this Mac") {
+                Toggle("", isOn: $enableLocalAI)
+                    .labelsHidden()
             }
-            Section("AI Features (opt-in)") {
-                Toggle(isOn: $enableLocalAI) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Local AI (Whisper / Ollama)")
-                            .font(.body)
-                        Text("Runs entirely on-device via Core ML or llama.cpp")
-                            .font(.caption)
-                            .foregroundColor(ForgeMediaTokens.Colors.muted)
-                    }
-                }
-                Toggle(isOn: $enableRemoteAI) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Remote AI")
-                            .font(.body)
-                        Text("Sends data to an external API — disabled by default")
-                            .font(.caption)
-                            .foregroundColor(enableRemoteAI ? ForgeMediaTokens.Colors.warning : ForgeMediaTokens.Colors.muted)
-                    }
+
+            settingsRow(title: "Allow Remote AI (Gemini)", subtitle: "Disabled by default. Requires explicit consent per workflow.") {
+                HStack(spacing: 8) {
+                    Text("Sends audio to Google")
+                        .font(.system(size: 10, design: .monospaced).weight(.medium))
+                        .foregroundColor(ForgeMediaTokens.Colors.warning)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(ForgeMediaTokens.Colors.warningGlow)
+                        .clipShape(Capsule(style: .continuous))
+                    Toggle("", isOn: $enableRemoteAI)
+                        .labelsHidden()
                 }
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
 
     private var engineTab: some View {
-        Form {
-            Section("FFmpeg") {
-                HStack {
-                    Text("ffmpeg path")
-                        .frame(width: 100, alignment: .trailing)
+        VStack(spacing: 10) {
+            settingsRow(title: "ffmpeg path", subtitle: "Live validation checks whether this executable exists") {
+                HStack(spacing: 8) {
                     TextField("/opt/homebrew/bin/ffmpeg", text: $ffmpegPath)
                         .textFieldStyle(.roundedBorder)
-                        .font(.system(.body, design: .monospaced))
+                        .font(.system(size: 11, design: .monospaced))
+                        .frame(width: 250)
                     engineStatusIndicator(path: ffmpegPath)
-                }
-                HStack {
-                    Spacer()
-                    ForEach(ffmpegCandidates, id: \.self) { candidate in
-                        let found = FileManager.default.isExecutableFile(atPath: candidate)
-                        if found {
-                            Button("Use \(url(candidate).lastPathComponent) (\(candidate))") {
-                                ffmpegPath = candidate
-                            }
-                            .controlSize(.mini)
-                            .buttonStyle(.borderless)
-                            .foregroundColor(ForgeMediaTokens.Colors.accent)
-                        }
-                    }
                 }
             }
 
-            Section("About") {
-                HStack {
-                    Text("Version")
-                        .foregroundColor(ForgeMediaTokens.Colors.muted)
-                    Spacer()
-                    Text("1.0.0")
-                        .font(.system(.body, design: .monospaced))
+            settingsRow(title: "Locate ffmpeg", subtitle: "Use the first installed Homebrew or system binary") {
+                Button("Locate ffmpeg…") {
+                    if let candidate = ffmpegCandidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
+                        ffmpegPath = candidate
+                    }
                 }
-                HStack {
-                    Text("Build")
-                        .foregroundColor(ForgeMediaTokens.Colors.muted)
-                    Spacer()
-                    Text("Local development")
-                        .font(.system(.body, design: .monospaced))
-                }
+                .controlSize(.small)
+            }
+
+            settingsRow(title: "Build", subtitle: "Local development") {
+                Text("1.0.0")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(ForgeMediaTokens.Colors.muted)
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
 
     private func privacyRow(icon: String, iconColor: Color, title: String, subtitle: String, isFixed: Bool) -> some View {
@@ -182,7 +189,27 @@ struct SettingsView: View {
                     .font(.system(size: 14))
             }
         }
-        .padding(.vertical, 2)
+        .padding(12)
+        .forgeGlassCard()
+    }
+
+    private func settingsRow<Accessory: View>(title: String, subtitle: String, @ViewBuilder accessory: () -> Accessory) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 13).weight(.medium))
+                    .foregroundColor(ForgeMediaTokens.Colors.fg)
+                Text(subtitle)
+                    .font(.system(size: 11))
+                    .foregroundColor(ForgeMediaTokens.Colors.muted)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            Spacer()
+            accessory()
+        }
+        .padding(12)
+        .forgeGlassCard()
     }
 
     private func engineStatusIndicator(path: String) -> some View {

@@ -1,9 +1,9 @@
 import SwiftUI
 
-// MARK: - ForgeMedia Design Tokens v2 (GeexArts Premium Standard)
+// MARK: - ForgeMedia Design Tokens
 //
-// Elevated from basic colors to a 4-tier glass morphism system, atmospheric
-// gradients, and critically damped spring physics for tactile, 120Hz-ready interactions.
+// Apple-native light materials, restrained color, and critically damped motion
+// aligned to the ForgeMedia Open Design hyperframes.
 
 public struct ForgeMediaTokens {
     // MARK: Glass Tiers (Backdrop Filter Materials)
@@ -18,7 +18,7 @@ public struct ForgeMediaTokens {
         public static let floating = Material.thickMaterial
     }
 
-    // MARK: Colors (Expanded Palette)
+    // MARK: Colors
     public struct Colors {
         // Neutrals
         public static let bg = Color(red: 0.961, green: 0.961, blue: 0.969)         // #f5f5f7
@@ -35,18 +35,15 @@ public struct ForgeMediaTokens {
         public static let accentStrong = Color(red: 0.0, green: 0.467, blue: 0.929)  // #0077ed
         public static let accentGlow = Color(red: 0.0, green: 0.4, blue: 0.8).opacity(0.12)
 
-        public static let amber = Color(red: 0.831, green: 0.537, blue: 0.047)       // #d4890c
-        public static let amberGlow = Color(red: 0.831, green: 0.537, blue: 0.047).opacity(0.12)
+        public static let warning = Color(red: 0.831, green: 0.537, blue: 0.047)     // #d4890c
+        public static let warningGlow = Color(red: 0.831, green: 0.537, blue: 0.047).opacity(0.12)
 
-        public static let teal = Color(red: 0.043, green: 0.482, blue: 0.549)        // #0b7b8c
-        public static let tealGlow = Color(red: 0.043, green: 0.482, blue: 0.549).opacity(0.10)
-
-        public static let rose = Color(red: 0.769, green: 0.271, blue: 0.431)        // #c4456e
-        public static let roseGlow = Color(red: 0.769, green: 0.271, blue: 0.431).opacity(0.10)
+        public static let teal = Color(red: 0.039, green: 0.561, blue: 0.533)        // #0a8f88
+        public static let tealGlow = Color(red: 0.039, green: 0.561, blue: 0.533).opacity(0.10)
 
         public static let success = Color(red: 0.102, green: 0.549, blue: 0.361)     // #1a8c5c
-        public static let warning = Color(red: 0.718, green: 0.475, blue: 0.122)     // #b7791f
         public static let danger = Color(red: 0.831, green: 0.231, blue: 0.231)      // #d43b3b
+        public static let dangerGlow = Color(red: 0.831, green: 0.231, blue: 0.231).opacity(0.10)
     }
 
     // MARK: Geometry (Squircle approximation via continuous)
@@ -74,10 +71,10 @@ public struct ForgeMediaTokens {
     }
 }
 
-// MARK: - View Extensions (GeexArts Premium Modifiers)
+// MARK: - View Extensions
 
 public extension View {
-    /// Applies the premium GeexArts glass card style with subtle edge definition.
+    /// Applies ForgeMedia's compact glass card style with native edge definition.
     func forgeGlassCard(isElevated: Bool = false) -> some View {
         self
             .background(isElevated ? ForgeMediaTokens.Glass.elevated : ForgeMediaTokens.Glass.surface)

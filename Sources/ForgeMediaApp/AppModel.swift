@@ -20,9 +20,21 @@ public final class AppModel {
     public var privacyMode: PrivacyMode = .privacyOn
     public var showJobsPanel: Bool = false
 
+    // MARK: - Language detection state
+
+    /// URLs waiting for language confirmation before enqueuing
+    public var pendingURLs: [URL] = []
+    public var pendingPresetID: String = "convert_h264"
+    public var detectionResults: [URL: LanguageDetectionResult] = [:]
+    public var showLanguageSheet: Bool = false
+    public var isDetectingLanguages: Bool = false
+
+    // MARK: - Internal dependencies
+
     let db: DatabaseService
     let engine: ProcessingEngine
     let localAgent: LocalAgentRouter
+    let languageService: LanguageDetectionService
     let logger = DiagnosticsLogger.shared
 
     private var jobRepo: JobRepository
@@ -34,11 +46,17 @@ public final class AppModel {
     public init(
         db: DatabaseService,
         engine: ProcessingEngine = FakeProcessingEngine(),
-        agent: LocalAgentRouter = StubLocalAgentRouter()
+        agent: LocalAgentRouter = StubLocalAgentRouter(),
+        geminiAPIKey: String? = ProcessInfo.processInfo.environment["GEMINI_API_KEY"],
+        remoteAIAllowed: Bool = false
     ) {
         self.db = db
         self.engine = engine
         self.localAgent = agent
+        self.languageService = LanguageDetectionService(
+            geminiAPIKey: geminiAPIKey,
+            remoteAIAllowed: remoteAIAllowed
+        )
         self.jobRepo = JobRepository(db: db)
         self.presetRepo = PresetRepository(db: db)
     }
@@ -81,7 +99,6 @@ public final class AppModel {
             let observation = self.jobRepo.observeRecentEvents(limit: 100)
             do {
                 for try await updated in observation.values(in: self.db.reader) {
-                    // Stream shows newest at bottom, so reverse the descending query
                     self.events = updated.reversed()
                 }
             } catch {
@@ -90,7 +107,99 @@ public final class AppModel {
         }
     }
 
-    // MARK: - Actions
+    // MARK: - Intake (Language-Detection Gate)
+
+    /// Primary intake point. Detects languages then shows confirmation sheet.
+    public func intakeVideos(urls: [URL], presetID: String = "convert_h264") {
+        let videos = urls.filter { isSupportedVideo($0) }
+        guard !videos.isEmpty else { return }
+
+        pendingURLs = videos
+        pendingPresetID = presetID
+        detectionResults = [:]
+        showLanguageSheet = false
+        isDetectingLanguages = true
+
+        Task {
+            let results = await languageService.detectBatch(urls: videos)
+            await MainActor.run {
+                self.detectionResults = results
+                self.isDetectingLanguages = false
+                self.showLanguageSheet = true
+            }
+        }
+    }
+
+    /// Called when user drops a single file or uses "Select Video".
+    public func intakeVideo(url: URL, presetID: String = "convert_h264") {
+        intakeVideos(urls: [url], presetID: presetID)
+    }
+
+    /// Called when user drops a folder.
+    public func intakeFolder(folderURL: URL, recursive: Bool = true, presetID: String = "convert_h264") {
+        guard folderURL.hasDirectoryPath else { return }
+
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: folderURL,
+            includingPropertiesForKeys: Array(keys),
+            options: recursive ? [.skipsHiddenFiles] : [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+        ) else { return }
+
+        var discovered: [URL] = []
+        for case let fileURL as URL in enumerator {
+            if isSupportedVideo(fileURL) {
+                discovered.append(fileURL)
+            }
+        }
+
+        intakeVideos(urls: discovered, presetID: presetID)
+    }
+
+    /// Called by the language sheet when user confirms.
+    /// `overrides` maps each URL to the user-confirmed BCP-47 source language code.
+    public func confirmLanguagesAndStart(overrides: [URL: String], targetLanguage: String) {
+        showLanguageSheet = false
+        let urls = pendingURLs
+        let presetID = pendingPresetID
+        let rawResults = detectionResults
+        pendingURLs = []
+        detectionResults = [:]
+
+        for url in urls where isSupportedVideo(url) {
+            let detected = rawResults[url]?.language.id
+            let confirmed = overrides[url]
+
+            let job = JobRecord(
+                title: url.lastPathComponent,
+                sourceURL: url,
+                presetID: presetID,
+                phase: .idle,
+                progressLabel: "Ready",
+                privacyMode: privacyMode,
+                detectedSourceLanguage: detected,
+                confirmedSourceLanguage: (confirmed != detected) ? confirmed : nil,
+                targetLanguage: targetLanguage
+            )
+            do {
+                try jobRepo.upsert(job)
+                Task { await logger.info("app", "Job added: \(job.title) [src=\(job.effectiveSourceLanguage) → tgt=\(targetLanguage)]") }
+                Task { await startJob(job) }
+            } catch {
+                Task { await logger.error("app", "Failed to add job: \(error.localizedDescription)") }
+            }
+        }
+    }
+
+    /// Called by the language sheet Cancel button — discard pending queue.
+    public func cancelPendingDetection() {
+        showLanguageSheet = false
+        isDetectingLanguages = false
+        pendingURLs = []
+        detectionResults = [:]
+    }
+
+    // MARK: - Legacy direct-add (used by demo / internal paths)
 
     public func addJob(url: URL, presetID: String = "convert_h264") {
         guard isSupportedVideo(url) else { return }
@@ -118,32 +227,12 @@ public final class AppModel {
         }
     }
 
-    public func addJobs(fromFolder folderURL: URL, recursive: Bool = true, presetID: String = "convert_h264") {
-        guard folderURL.hasDirectoryPath else { return }
-
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
-        guard let enumerator = FileManager.default.enumerator(
-            at: folderURL,
-            includingPropertiesForKeys: Array(keys),
-            options: recursive ? [.skipsHiddenFiles] : [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
-        ) else {
-            return
-        }
-
-        var discovered: [URL] = []
-        for case let fileURL as URL in enumerator {
-            if isSupportedVideo(fileURL) {
-                discovered.append(fileURL)
-            }
-        }
-
-        addJobs(urls: discovered, presetID: presetID)
-    }
-
     private func isSupportedVideo(_ url: URL) -> Bool {
         let ext = url.pathExtension.lowercased()
         return supportedVideoExtensions.contains(ext)
     }
+
+    // MARK: - Job execution
 
     public func startJob(_ job: JobRecord) async {
         guard let preset = presets.first(where: { $0.id == job.presetID }) else {
@@ -198,9 +287,6 @@ public final class AppModel {
 
     // MARK: - Demo / Visual Activity
 
-    /// Injects a scripted sequence of `JobEvent`s into the database so the
-    /// Activity Stream view has visible content even without a real job.
-    /// Backs the "Demo" button in the UI; useful for visual review and onboarding.
     public func injectDemoActivity() {
         guard let firstJob = jobs.first else { return }
         let jobID = firstJob.id

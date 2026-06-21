@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// GeexArts Premium Drop Zone
-/// Features: Multi-layered glass, ambient breathing glow, fluid spring physics on drag-over.
+/// ForgeMedia media intake drop zone with glass material and spring hover feedback.
 public struct DropZoneView: View {
     @Binding public var isTargeted: Bool
     public let onDrop: ([URL]) -> Void
@@ -16,7 +15,7 @@ public struct DropZoneView: View {
 
     public var body: some View {
         ZStack {
-            // 1. Ambient Breathing Glow (behind the glass)
+            // 1. Subtle intake glow (behind the glass)
             Circle()
                 .fill(ForgeMediaTokens.Colors.accent)
                 .blur(radius: 60)
@@ -30,7 +29,7 @@ public struct DropZoneView: View {
             // 2. Glass Surface
             VStack(spacing: 10) {
                 // Icon with spring morph
-                Image(systemName: isTargeted ? "tray.and.arrow.down.fill" : "tray.and.arrow.down")
+                Image(systemName: isTargeted ? "film.stack.fill" : "film.stack")
                     .font(.system(size: 32, weight: .medium))
                     .foregroundColor(isTargeted ? ForgeMediaTokens.Colors.accent : ForgeMediaTokens.Colors.muted)
                     .scaleEffect(isTargeted ? 1.15 : 1.0)
@@ -64,7 +63,7 @@ public struct DropZoneView: View {
             x: 0, y: isTargeted ? 8 : 2
         )
         // Fluid spring scale on drag-over
-        .scaleEffect(isTargeted ? 1.006 : 1.0)
+        .scaleEffect(isTargeted || isHovered ? 1.015 : 1.0)
         .animation(ForgeMediaTokens.Motion.spring, value: isTargeted)
         .onHover { hovering in
             withAnimation(ForgeMediaTokens.Motion.snappy) {
@@ -73,17 +72,24 @@ public struct DropZoneView: View {
         }
         // Native macOS drag and drop
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
-            let urls = providers.compactMap { provider -> URL? in
-                var url: URL?
-                let semaphore = DispatchSemaphore(value: 0)
+            let collector = DropURLCollector()
+            let group = DispatchGroup()
+
+            for provider in providers {
+                group.enter()
                 _ = provider.loadObject(ofClass: URL.self) { obj, _ in
-                    url = obj
-                    semaphore.signal()
+                    if let obj {
+                        collector.append(obj)
+                    }
+                    group.leave()
                 }
-                semaphore.wait()
-                return url
             }
-            if !urls.isEmpty { onDrop(urls) }
+
+            group.notify(queue: .main) {
+                let urls = collector.snapshot()
+                if !urls.isEmpty { onDrop(urls) }
+            }
+
             return true
         }
         .onAppear {
@@ -92,6 +98,24 @@ public struct DropZoneView: View {
                 breathingPhase = 1.0
             }
         }
+    }
+}
+
+private final class DropURLCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var urls: [URL] = []
+
+    func append(_ url: URL) {
+        lock.lock()
+        urls.append(url)
+        lock.unlock()
+    }
+
+    func snapshot() -> [URL] {
+        lock.lock()
+        let value = urls
+        lock.unlock()
+        return value
     }
 }
 

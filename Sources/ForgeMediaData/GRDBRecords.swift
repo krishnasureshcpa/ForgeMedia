@@ -7,7 +7,7 @@ import ForgeMediaDomain
 extension MediaPreset: FetchableRecord, PersistableRecord, TableRecord {
     public static var databaseTableName: String { "presets" }
 
-    enum Columns: String, ColumnExpression {
+    public enum Columns: String, ColumnExpression {
         case id, name, engine, outputContainer, videoCodec, audioCodec, subtitleBehavior, privacyMode
     }
 
@@ -41,10 +41,11 @@ extension MediaPreset: FetchableRecord, PersistableRecord, TableRecord {
 extension JobRecord: FetchableRecord, PersistableRecord, TableRecord {
     public static var databaseTableName: String { "jobs" }
 
-    enum Columns: String, ColumnExpression {
+    public enum Columns: String, ColumnExpression {
         case id, title, sourceURL, outputURL, presetID, phase, progressFraction,
              progressConfidence, progressLabel, createdAt, updatedAt, lastCheckpoint,
-             privacyMode, cancellationRequested
+             privacyMode, cancellationRequested,
+             detectedSourceLanguage, confirmedSourceLanguage, targetLanguage
     }
 
     public init(row: Row) throws {
@@ -62,7 +63,10 @@ extension JobRecord: FetchableRecord, PersistableRecord, TableRecord {
             updatedAt: row[Columns.updatedAt],
             lastCheckpoint: row[Columns.lastCheckpoint],
             privacyMode: PrivacyMode(rawValue: row[Columns.privacyMode]) ?? .privacyOn,
-            cancellationRequested: row[Columns.cancellationRequested]
+            cancellationRequested: row[Columns.cancellationRequested],
+            detectedSourceLanguage: row[Columns.detectedSourceLanguage],
+            confirmedSourceLanguage: row[Columns.confirmedSourceLanguage],
+            targetLanguage: row[Columns.targetLanguage] ?? "en"
         )
     }
 
@@ -81,6 +85,9 @@ extension JobRecord: FetchableRecord, PersistableRecord, TableRecord {
         container[Columns.lastCheckpoint] = lastCheckpoint
         container[Columns.privacyMode] = privacyMode.rawValue
         container[Columns.cancellationRequested] = cancellationRequested
+        container[Columns.detectedSourceLanguage] = detectedSourceLanguage
+        container[Columns.confirmedSourceLanguage] = confirmedSourceLanguage
+        container[Columns.targetLanguage] = targetLanguage
     }
 }
 
@@ -89,7 +96,7 @@ extension JobRecord: FetchableRecord, PersistableRecord, TableRecord {
 extension JobEvent: FetchableRecord, PersistableRecord, TableRecord {
     public static var databaseTableName: String { "jobEvents" }
 
-    enum Columns: String, ColumnExpression {
+    public enum Columns: String, ColumnExpression {
         case id, jobID, phase, message, progressFraction, progressConfidence, createdAt
     }
 

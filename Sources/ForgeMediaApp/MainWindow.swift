@@ -19,10 +19,9 @@ struct MainWindow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top bar
             HStack {
                 Text("ForgeMedia")
-                    .font(.system(.title3, design: .default).weight(.semibold))
+                    .font(.system(size: 15, design: .default).weight(.semibold))
                     .foregroundColor(ForgeMediaTokens.Colors.fg)
 
                 Spacer()
@@ -93,6 +92,23 @@ struct MainWindow: View {
             .padding(.vertical, 12)
             .background(ForgeMediaTokens.Glass.base)
 
+            // Language detection progress banner
+            if model.isDetectingLanguages {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                        .frame(width: 16, height: 16)
+                    Text("Detecting source languages… · \(model.pendingURLs.count) file\(model.pendingURLs.count == 1 ? "" : "s")")
+                        .font(.system(size: 13, design: .default).weight(.medium))
+                        .foregroundColor(ForgeMediaTokens.Colors.fgSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(ForgeMediaTokens.Colors.accentGlow)
+                .transition(.opacity.animation(ForgeMediaTokens.Motion.smooth))
+            }
+
             Divider()
 
             // Content: NavigationSplitView for proper Apple HIG multi-column layout
@@ -102,7 +118,7 @@ struct MainWindow: View {
                     if model.jobs.isEmpty {
                         VStack(spacing: 16) {
                             DropZoneView(isTargeted: $isDragTargeted) { urls in
-                                model.addJobs(urls: urls, presetID: selectedPreset)
+                                model.intakeVideos(urls: urls, presetID: selectedPreset)
                             }
                             .frame(width: 400)
 
@@ -128,7 +144,7 @@ struct MainWindow: View {
                                     Text("Try a visual demo")
                                 }
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.bordered)
                             .controlSize(.small)
                             .help("Seeds a synthetic job so you can see the activity stream")
                         }
@@ -139,7 +155,7 @@ struct MainWindow: View {
                         ScrollView {
                             LazyVStack(spacing: 8) {
                                 DropZoneView(isTargeted: $isDragTargeted) { urls in
-                                    model.addJobs(urls: urls, presetID: selectedPreset)
+                                    model.intakeVideos(urls: urls, presetID: selectedPreset)
                                 }
                                 .frame(height: isDragTargeted ? 120 : 60)
                                 .padding(.vertical, 8)
@@ -185,12 +201,28 @@ struct MainWindow: View {
             }
         }
         .background(ForgeMediaTokens.Colors.bg)
-        .frame(minWidth: 520, minHeight: 400)
+        .frame(minWidth: 980, minHeight: 640)
         .animation(ForgeMediaTokens.Motion.smooth, value: model.jobs.count)
+        .sheet(isPresented: $model.showLanguageSheet) {
+            LanguageDetectionSheet(
+                detectionResults: model.detectionResults,
+                onConfirm: { overrides, targetLanguage in
+                    model.confirmLanguagesAndStart(overrides: overrides, targetLanguage: targetLanguage)
+                },
+                onCancel: {
+                    model.cancelPendingDetection()
+                }
+            )
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
         .onAppear {
             model.start()
         }
     }
+
+    // MARK: - Sub-views
 
     private var privacyBadge: some View {
         HStack(spacing: 4) {
@@ -219,6 +251,8 @@ struct MainWindow: View {
         }
     }
 
+    // MARK: - File pickers
+
     private func pickSingleVideo() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
@@ -226,7 +260,7 @@ struct MainWindow: View {
         panel.allowsMultipleSelection = false
         panel.allowedContentTypes = [.movie]
         if panel.runModal() == .OK, let url = panel.url {
-            model.addJob(url: url, presetID: selectedPreset)
+            model.intakeVideo(url: url, presetID: selectedPreset)
         }
     }
 
@@ -237,8 +271,7 @@ struct MainWindow: View {
         panel.allowsMultipleSelection = true
         panel.allowedContentTypes = [.movie]
         if panel.runModal() == .OK {
-            let urls = panel.urls
-            model.addJobs(urls: urls, presetID: selectedPreset)
+            model.intakeVideos(urls: panel.urls, presetID: selectedPreset)
         }
     }
 
@@ -248,28 +281,18 @@ struct MainWindow: View {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         if panel.runModal() == .OK, let folderURL = panel.url {
-            model.addJobs(fromFolder: folderURL, recursive: true, presetID: selectedPreset)
+            model.intakeFolder(folderURL: folderURL, recursive: true, presetID: selectedPreset)
         }
     }
 }
 
-// Note: #Preview macros are not available in SPM command-line builds.
-// Use Xcode preview canvas for interactive previews.
-
 // MARK: - Demo seeding (visual review)
 
 extension MainWindow {
-    /// Adds a synthetic demo job and lets `AppModel.injectDemoActivity` drive
-    /// a short scripted sequence of events so the Activity Stream view has
-    /// visible content for visual review / onboarding.
     func runVisualDemo() {
-        // 1. Synthesize a placeholder video URL (won't actually decode — but
-        //    drives the JobEvent stream + JobCardView progress UI).
         let demoURL = URL(fileURLWithPath: "/tmp/forgemedia_demo_interview_4k.mov")
         model.addJob(url: demoURL, presetID: selectedPreset)
 
-        // 2. Kick the scripted activity after a short delay so the job has
-        //    settled into the queue.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak model] in
             model?.injectDemoActivity()
         }
